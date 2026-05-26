@@ -18,11 +18,15 @@ export default function PusatDashboard() {
     updateUserProfile,
     sendNotification,
     globalSettings,
-    currentUser
+    currentUser,
+    actionLogs
   } = useMetaConnect();
 
   // Tab View state
-  const [activeView, setActiveView] = useState<'churches' | 'members' | 'proposals' | 'inbox' | 'profile'>('proposals');
+  const [activeView, setActiveView] = useState<'churches' | 'members' | 'proposals' | 'inbox' | 'profile' | 'audit_logs'>('proposals');
+
+  // Reason text for audit verification
+  const [churchActionReason, setChurchActionReason] = useState('Verifikasi berkas administratif Kemenag lengkap dan sah');
 
   // Selected church for launching and customization configuration
   const [selectedChurchId, setSelectedChurchId] = useState('');
@@ -170,8 +174,22 @@ export default function PusatDashboard() {
           </p>
         </div>
 
-        <div className="shrink-0 flex flex-col gap-2">
+        <div className="shrink-0 flex flex-col sm:flex-row gap-2">
           <button 
+            id="btn-view-audit-logs"
+            onClick={() => setActiveView('audit_logs')}
+            className={`px-4 py-2 text-xs rounded-full border transition-all text-left flex items-center gap-2 cursor-pointer font-bold ${
+              activeView === 'audit_logs' 
+                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] ring-2 ring-[#1A1A1A]/10' 
+                : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+            }`}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            <span>Histori Aksi & Pertimbangan</span>
+          </button>
+
+          <button 
+            id="btn-view-admin-profile"
             onClick={() => {
               setActiveView('profile');
               // Prepopulate profile if needed
@@ -771,17 +789,34 @@ export default function PusatDashboard() {
 
                   </div>
 
-                  <div className="p-4 bg-white/60 border border-emerald-100 rounded-xl text-neutral-600 text-xs leading-relaxed space-y-1.5 font-sans">
-                    <div className="font-bold text-[#1A1A1A]">Pernyataan Auditor Hukum Pusat:</div>
-                    <p>Setelah melakukan pemeriksaan silang terhadap nomor registrasi kemenag <span className="font-mono font-bold text-emerald-800">{selectedProposal.permitNumber}</span> dan menetapkan legalitas Kemitraan, administrator pusat menyatakan berkas ini layak untuk diaktifkan.</p>
+                  <div className="p-4 bg-white/60 border border-emerald-100 rounded-xl text-neutral-600 text-xs leading-relaxed space-y-3 font-sans">
+                    <div>
+                      <div className="font-bold text-[#1A1A1A]">Pernyataan Auditor Hukum Pusat:</div>
+                      <p>Setelah melakukan pemeriksaan silang terhadap nomor registrasi kemenag <span className="font-mono font-bold text-emerald-800">{selectedProposal.permitNumber}</span> dan menetapkan legalitas Kemitraan, administrator pusat menyatakan berkas ini layak untuk diaktifkan.</p>
+                    </div>
+
+                    <div className="space-y-1 pt-1.5 border-t border-slate-100">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">
+                        Alasan & Pertimbangan Verifikasi (Wajib Diisi):
+                      </label>
+                      <input
+                        type="text"
+                        id="input-audit-reason"
+                        value={churchActionReason}
+                        onChange={(e) => setChurchActionReason(e.target.value)}
+                        placeholder="Contoh: Dokumen pendaftaran lengkap dan legalitas Kemenag terverifikasi"
+                        className="w-full px-3 py-2 bg-white border border-[#1A1A1A]/10 rounded-lg text-xs text-[#1A1A1A] focus:outline-none focus:border-emerald-600 font-sans"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-3">
                     <button
                       id={`btn-deny-dossier-${selectedProposal.id}`}
                       onClick={() => {
-                        verifyChurch(selectedProposal.id, 'REJECTED');
+                        verifyChurch(selectedProposal.id, 'REJECTED', churchActionReason || 'Berkas dilarang karena ketidaklengkapan data');
                         setReviewProposalId(null);
+                        setChurchActionReason('Verifikasi berkas administratif Kemenag lengkap dan sah');
                       }}
                       className="px-5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs rounded-full font-bold cursor-pointer"
                     >
@@ -790,8 +825,9 @@ export default function PusatDashboard() {
                     <button
                       id={`btn-approve-dossier-${selectedProposal.id}`}
                       onClick={() => {
-                        verifyChurch(selectedProposal.id, 'APPROVED');
+                        verifyChurch(selectedProposal.id, 'APPROVED', churchActionReason || 'Verifikasi berkas administratif Kemenag lengkap dan sah');
                         setReviewProposalId(null);
+                        setChurchActionReason('Verifikasi berkas administratif Kemenag lengkap dan sah');
                       }}
                       className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-705 text-white shadow-md text-xs rounded-full font-bold cursor-pointer"
                     >
@@ -935,6 +971,97 @@ export default function PusatDashboard() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {activeView === 'audit_logs' && (
+            <div id="audit-logs-view-panel" className="bg-white rounded-3xl p-6 border border-[#1A1A1A]/10 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="space-y-1">
+                  <h3 className="font-serif italic text-xl text-[#1A1A1A] flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-indigo-700" />
+                    Histori Aksi & Justifikasi Pertimbangan
+                  </h3>
+                  <p className="text-xs text-slate-500 font-sans">Daftar rekapan real-time atas seluruh penyerahan, penolakan, verifikasi pusat/lokal, program kerja, serta mutasi keuangan dalam sistem.</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/40 block">Total Tindakan</span>
+                  <span className="text-lg font-serif italic font-bold text-indigo-800">{actionLogs ? actionLogs.length : 0} Rekaman</span>
+                </div>
+              </div>
+
+              <div className="space-y-4 font-sans">
+                {(!actionLogs || actionLogs.length === 0) ? (
+                  <div className="py-12 text-center text-slate-400 text-xs italic">
+                    Belum ada tindakan administratif terdata dalam sistem ini.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {actionLogs.map((log: any) => {
+                      const dateFormatted = new Date(log.timestamp).toLocaleString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+
+                      let actionTagBg = 'bg-slate-100 text-slate-700 border-slate-200';
+                      if (log.actionType.includes('GEREJA')) actionTagBg = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                      else if (log.actionType.includes('ANGGOTA')) actionTagBg = 'bg-sky-50 text-sky-700 border-sky-200';
+                      else if (log.actionType.includes('KEUANGAN')) actionTagBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                      else if (log.actionType.includes('AGENDA')) actionTagBg = 'bg-amber-50 text-amber-700 border-amber-200';
+                      else if (log.actionType.includes('ABSENSI')) actionTagBg = 'bg-rose-50 text-rose-700 border-rose-200';
+
+                      return (
+                        <div 
+                          key={log.id} 
+                          className="p-4 rounded-2xl border border-slate-100 hover:border-indigo-100 bg-[#F2F1ED]/10 transition-all text-xs flex flex-col md:flex-row justify-between gap-4"
+                        >
+                          <div className="space-y-2 max-w-xl">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider border uppercase ${actionTagBg}`}>
+                                {log.actionType}
+                              </span>
+                              <span className="text-slate-400">•</span>
+                              <span className="font-mono text-slate-500 font-bold">{dateFormatted}</span>
+                            </div>
+
+                            <p className="text-slate-900 font-bold leading-relaxed font-sans mt-0.5">
+                              Target Aksi: <span className="text-indigo-900 font-serif font-bold italic">{log.targetName}</span>
+                            </p>
+
+                            <div className="p-2.5 bg-[#F2F1ED]/40 border border-slate-150 rounded-xl space-y-1">
+                              <div className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Catatan Pertimbangan / Alasan:</div>
+                              <p className="text-slate-700 font-sans leading-relaxed italic">"{log.reason}"</p>
+                            </div>
+                          </div>
+
+                          <div className="md:text-right flex flex-col justify-between shrink-0 space-y-2 border-t md:border-t-0 border-[#1A1A1A]/5 pt-2 md:pt-0">
+                            <div>
+                              <span className="text-[10px] block text-slate-400">Kasir / Aktor:</span>
+                              <span className="font-bold text-[#1A1A1A] block">{log.actorName}</span>
+                              <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-1 rounded inline-block mt-0.5">{log.actorRole}</span>
+                            </div>
+
+                            <div>
+                              <span className={`px-2 py-1 rounded inline-block font-sans text-[10px] font-bold ${
+                                log.status === 'APPROVED' 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                  : log.status === 'REJECTED' 
+                                    ? 'bg-red-50 text-red-700 border border-red-200' 
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                                {log.status === 'APPROVED' ? 'Disetujui ✓' : log.status === 'REJECTED' ? 'Ditolak ✗' : 'Menunggu •'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

@@ -21,10 +21,20 @@ export default function GembalaDashboard() {
     approveAttendance,
     addOfficer,
     removeOfficerAccess,
-    addLocalDevotional
+    addLocalDevotional,
+    actionLogs
   } = useMetaConnect();
 
   const [activeSubTab, setActiveSubTab] = useState<'approvals' | 'activity' | 'devotional' | 'staff'>('approvals');
+
+  // Interactive metric model panel states
+  const [clickedMetric, setClickedMetric] = useState<'KAS' | 'ANGGOTA' | 'PELAYAN' | 'TINDAKAN' | null>(null);
+
+  // Custom reasons states for verifications
+  const [userVerifyReason, setUserVerifyReason] = useState('Verifikasi identitas jemaat dan penetapan tugas pelayanan');
+  const [financeVerifyReason, setFinanceVerifyReason] = useState('Pengeluaran/pemasukan operasional sah sirkulasi anggaran bendahara');
+  const [agendaVerifyReason, setAgendaVerifyReason] = useState('Realisasi agenda program pelayanan jemaat disetujui');
+  const [attendanceVerifyReason, setAttendanceVerifyReason] = useState('Verifikasi rekapitulasi kehadiran pelayan di ibadah');
 
   // Devotional form state
   const [devTitle, setDevTitle] = useState('');
@@ -214,51 +224,72 @@ export default function GembalaDashboard() {
 
       {/* Quick Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-[#1A1A1A] text-[#F9F8F6] p-6 rounded-3xl shadow-xs flex items-center justify-between">
+        <button 
+          id="btn-metric-kas"
+          onClick={() => setClickedMetric('KAS')}
+          className="bg-[#1A1A1A] text-[#F9F8F6] p-6 rounded-3xl shadow-xs flex items-center justify-between text-left hover:ring-4 hover:ring-neutral-200 transition cursor-pointer"
+        >
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-white/50">Kas Keuangan Gereja</span>
             <div className="text-2xl font-serif italic mt-2 text-[#E8E6E1]">Rp {balance.toLocaleString('id-ID')}</div>
-            <span className="text-[10px] text-white/40 block mt-1 uppercase font-semibold tracking-wider">Disetujui Gembala</span>
+            <span className="text-[10px] text-emerald-400 block mt-1 uppercase font-bold tracking-wider">Minta Rincian (Klik) ↗</span>
           </div>
-          <div className="p-3 bg-white/10 rounded-full text-white">
+          <div className="p-3 bg-white/10 rounded-full text-white shrink-0">
             <DollarSign className="h-5 w-5" />
           </div>
-        </div>
+        </button>
 
-        <div className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 flex items-center justify-between shadow-xs">
+        <button 
+          id="btn-metric-anggota"
+          onClick={() => setClickedMetric('ANGGOTA')}
+          className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 flex items-center justify-between text-left hover:ring-4 hover:ring-slate-100 transition cursor-pointer shadow-xs"
+        >
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 font-sans">Anggota Jemaat Terdaftar</span>
             <div className="text-2xl font-serif italic mt-2 text-[#1A1A1A]">{approvedUsers.length} Jiwa</div>
-            <span className="text-[10px] text-red-700 font-bold block mt-1 uppercase tracking-wider">{pendingUsers.length > 0 ? `${pendingUsers.length} Permohonan` : 'Keanggotaan Stabil'}</span>
+            <span className="text-[10px] text-red-700 font-bold block mt-1 uppercase tracking-wider">
+              {pendingUsers.length > 0 ? `${pendingUsers.length} Antrean (Klik)` : 'Lihat Data (Klik) ↗'}
+            </span>
           </div>
-          <div className="p-3 bg-[#F2F1ED] rounded-full text-[#1A1A1A]">
+          <div className="p-3 bg-[#F2F1ED] rounded-full text-[#1A1A1A] shrink-0">
             <Users className="h-5 w-5" />
           </div>
-        </div>
+        </button>
 
-        <div className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 flex items-center justify-between shadow-xs">
+        <button 
+          id="btn-metric-pelayan"
+          onClick={() => setClickedMetric('PELAYAN')}
+          className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 flex items-center justify-between text-left hover:ring-4 hover:ring-slate-100 transition cursor-pointer shadow-xs"
+        >
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 font-sans">Pelayan Mimbar Aktif</span>
             <div className="text-2xl font-serif italic mt-2 text-[#1A1A1A]">{activeServants.length} Pelayan</div>
-            <span className="text-[10px] text-slate-400 block mt-1 uppercase tracking-wider font-semibold">Tercatat aktif</span>
+            <span className="text-[10px] text-indigo-700 font-bold block mt-1 tracking-wider uppercase">Audit Agenda (Klik) ↗</span>
           </div>
-          <div className="p-3 bg-[#F2F1ED] rounded-full text-[#1A1A1A]">
+          <div className="p-3 bg-[#F2F1ED] rounded-full text-[#1A1A1A] shrink-0">
             <Award className="h-5 w-5" />
           </div>
-        </div>
+        </button>
 
-        <div className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 flex items-center justify-between shadow-xs">
+        <button 
+          id="btn-metric-tindakan"
+          onClick={() => {
+            setClickedMetric('TINDAKAN');
+            setActiveSubTab('approvals');
+          }}
+          className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 flex items-center justify-between text-left hover:ring-4 hover:ring-slate-100 transition cursor-pointer shadow-xs"
+        >
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 font-sans">Perlu Tindakan Gembala</span>
             <div className="text-2xl font-serif italic mt-2 text-red-750">
               {pendingAgendas.length + pendingFinances.length + pendingAttendance.length + pendingUsers.length} Poin
             </div>
-            <span className="text-[10px] text-slate-400 block mt-1 uppercase tracking-wider font-semibold">Persetujuan tertunda</span>
+            <span className="text-[10px] text-red-650 font-bold block mt-1 uppercase tracking-wider animate-pulse">Selesaikan Sekarang ↗</span>
           </div>
-          <div className="p-3 bg-red-50 rounded-full text-red-650">
+          <div className="p-3 bg-red-50 rounded-full text-red-650 shrink-0">
             <Clock className="h-5 w-5" />
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Main Sections */}
@@ -300,21 +331,39 @@ export default function GembalaDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex space-x-2 shrink-0 self-end md:self-start">
-                        <button
-                          id={`btn-reject-user-${user.id}`}
-                          onClick={() => verifyUser(user.id, 'REJECTED')}
-                          className="px-4 py-2 hover:bg-[#F2F1ED] text-[#1A1A1A] text-[10px] uppercase tracking-widest rounded-full border border-[#1A1A1A]/15 transition font-bold cursor-pointer"
-                        >
-                          Tolak
-                        </button>
-                        <button
-                          id={`btn-approve-user-${user.id}`}
-                          onClick={() => verifyUser(user.id, 'APPROVED')}
-                          className="px-4 py-2 bg-[#1A1A1A] hover:bg-opacity-90 text-white text-[10px] uppercase tracking-widest rounded-full shadow-xs transition font-bold cursor-pointer"
-                        >
-                          Sahkan
-                        </button>
+                      <div className="pt-2 border-t border-dashed border-[#1A1A1A]/10 space-y-2 w-full md:w-auto">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Alasan/Catatan:</span>
+                          <input
+                            type="text"
+                            id={`input-reason-user-${user.id}`}
+                            placeholder="Alasan verifikasi atau catatan penugasan jemaat..."
+                            defaultValue={`Disahkan sebagai jemaat dan pelayan komitmen: ${user.serviceRole || 'Jemaat biasa'}`}
+                            className="w-full text-[10px] px-2.5 py-1 border border-[#1A1A1A]/10 rounded bg-[#F2F1ED]/30 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            id={`btn-reject-user-${user.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-user-${user.id}`) as HTMLInputElement)?.value || 'Ditolak karena ketidaksesuaian administrasi gereja';
+                              verifyUser(user.id, 'REJECTED', val);
+                            }}
+                            className="px-4 py-2 hover:bg-[#F2F1ED] text-[#1A1A1A] text-[10px] uppercase tracking-widest rounded-full border border-[#1A1A1A]/15 transition font-bold cursor-pointer"
+                          >
+                            Tolak
+                          </button>
+                          <button
+                            id={`btn-approve-user-${user.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-user-${user.id}`) as HTMLInputElement)?.value || 'Lolos verifikasi administrasi dan sah menjadi anggota jemaat';
+                              verifyUser(user.id, 'APPROVED', val);
+                            }}
+                            className="px-4 py-2 bg-[#1A1A1A] hover:bg-opacity-90 text-white text-[10px] uppercase tracking-widest rounded-full shadow-xs transition font-bold cursor-pointer"
+                          >
+                            Sahkan
+                          </button>
+                        </div>
                       </div>
 
                     </div>
@@ -367,21 +416,39 @@ export default function GembalaDashboard() {
 
                     <div className="flex justify-between items-center pt-2 text-[10px] border-t border-[#1A1A1A]/5">
                       <span className="text-slate-400 font-mono">Penginput: <span className="font-bold text-[#1A1A1A]">{record.inputBy}</span></span>
-                      <div className="flex space-x-1.5">
-                        <button
-                          id={`btn-reject-finance-${record.id}`}
-                          onClick={() => approveFinance(record.id, 'REJECTED')}
-                          className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-red-700 hover:bg-[#F2F1ED] border border-[#1A1A1A]/10 rounded-full transition font-semibold cursor-pointer"
-                        >
-                          Tolak
-                        </button>
-                        <button
-                          id={`btn-approve-finance-${record.id}`}
-                          onClick={() => approveFinance(record.id, 'APPROVED')}
-                          className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-white bg-[#1A1A1A] hover:bg-opacity-90 rounded-full font-bold transition cursor-pointer"
-                        >
-                          Setujui
-                        </button>
+                      <div className="pt-2 border-t border-dashed border-[#1A1A1A]/5 space-y-2 w-full md:w-auto">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0 font-sans">Alasan/Catatan:</span>
+                          <input
+                            type="text"
+                            id={`input-reason-fin-${record.id}`}
+                            placeholder="Alasan persetujuan transaksi kas bendahara..."
+                            defaultValue={`Laporan buku kas sah disetujui pada pos operasional: ${record.category}`}
+                            className="w-full text-[10px] px-2 py-1 border border-[#1A1A1A]/10 rounded bg-[#F2F1ED]/30 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-1.5 font-bold">
+                          <button
+                            id={`btn-reject-finance-${record.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-fin-${record.id}`) as HTMLInputElement)?.value || 'Pengeluaran ditutup / direvisi oleh Gembala';
+                              approveFinance(record.id, 'REJECTED', val);
+                            }}
+                            className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-red-700 hover:bg-[#F2F1ED] border border-[#1A1A1A]/10 rounded-full transition font-semibold cursor-pointer"
+                          >
+                            Tolak
+                          </button>
+                          <button
+                            id={`btn-approve-finance-${record.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-fin-${record.id}`) as HTMLInputElement)?.value || 'Aliran kas dikonfirmasi sah sesuai rincian rilis bendahara';
+                              approveFinance(record.id, 'APPROVED', val);
+                            }}
+                            className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-white bg-[#1A1A1A] hover:bg-opacity-90 rounded-full font-bold transition cursor-pointer"
+                          >
+                            Setujui
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -428,21 +495,39 @@ export default function GembalaDashboard() {
 
                     <div className="flex justify-between items-center pt-2 border-t border-[#1A1A1A]/5">
                       <span className="text-[10px] text-slate-400 font-mono">Diusulkan oleh: <strong className="text-[#1A1A1A]">{agenda.proposedBy}</strong></span>
-                      <div className="flex space-x-1.5">
-                        <button
-                          id={`btn-reject-agenda-${agenda.id}`}
-                          onClick={() => approveAgenda(agenda.id, 'REJECTED')}
-                          className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-slate-150 hover:bg-slate-200 text-slate-600 rounded-full cursor-pointer transition font-semibold"
-                        >
-                          Tolak
-                        </button>
-                        <button
-                          id={`btn-approve-agenda-${agenda.id}`}
-                          onClick={() => approveAgenda(agenda.id, 'APPROVED')}
-                          className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-[#1A1A1A] hover:bg-opacity-90 text-white font-bold rounded-full cursor-pointer transition"
-                        >
-                          Setujui
-                        </button>
+                      <div className="pt-2 border-t border-[#1A1A1A]/5 space-y-2 w-full">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0 font-sans">Alasan/Catatan:</span>
+                          <input
+                            type="text"
+                            id={`input-reason-agenda-${agenda.id}`}
+                            placeholder="Alasan persetujuan sirkulasi program kerja..."
+                            defaultValue={`Rancangan program '${agenda.title}' disetujui demi perkembangan Jemaat`}
+                            className="w-full text-[10px] px-2 py-1 border border-[#1A1A1A]/10 rounded bg-[#F2F1ED]/30 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-1.5">
+                          <button
+                            id={`btn-reject-agenda-${agenda.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-agenda-${agenda.id}`) as HTMLInputElement)?.value || 'Rancangan acara ditolak untuk direvisi pengurus';
+                              approveAgenda(agenda.id, 'REJECTED', val);
+                            }}
+                            className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-slate-150 hover:bg-slate-200 text-slate-600 rounded-full cursor-pointer transition font-semibold"
+                          >
+                            Tolak
+                          </button>
+                          <button
+                            id={`btn-approve-agenda-${agenda.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-agenda-${agenda.id}`) as HTMLInputElement)?.value || 'Program kerja gereja lokal disahkan secara definitif';
+                              approveAgenda(agenda.id, 'APPROVED', val);
+                            }}
+                            className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-[#1A1A1A] hover:bg-opacity-90 text-white font-bold rounded-full cursor-pointer transition"
+                          >
+                            Setujui
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -505,21 +590,39 @@ export default function GembalaDashboard() {
 
                     <div className="flex justify-between items-center pt-2 border-t border-[#1A1A1A]/5">
                       <span className="text-[10px] text-slate-400 font-mono">Log Sekretaris: <strong className="text-[#1A1A1A]">{record.inputBy}</strong></span>
-                      <div className="flex space-x-1.5">
-                        <button
-                          id={`btn-reject-attendance-${record.id}`}
-                          onClick={() => approveAttendance(record.id, 'REJECTED')}
-                          className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-slate-100 text-slate-500 rounded-full cursor-pointer transition font-semibold"
-                        >
-                          Tolak
-                        </button>
-                        <button
-                          id={`btn-approve-attendance-${record.id}`}
-                          onClick={() => approveAttendance(record.id, 'APPROVED')}
-                          className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-[#1A1A1A] hover:bg-opacity-90 text-white font-bold rounded-full cursor-pointer transition"
-                        >
-                          Validasi Presensi
-                        </button>
+                      <div className="pt-2 border-t border-[#1A1A1A]/5 space-y-2 w-full">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0 font-sans">Alasan/Catatan:</span>
+                          <input
+                            type="text"
+                            id={`input-reason-attendance-${record.id}`}
+                            placeholder="Alasan penyetujuan rekap absensi sekretariat..."
+                            defaultValue={`Laporan presensi pelayan ibadah raya ${record.activityName} tervalidasi sakral`}
+                            className="w-full text-[10px] px-2 py-1 border border-[#1A1A1A]/10 rounded bg-[#F2F1ED]/30 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-1.5">
+                          <button
+                            id={`btn-reject-attendance-${record.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-attendance-${record.id}`) as HTMLInputElement)?.value || 'Presensi ditolak karena ketidakcocokan daftar hadir pelayan';
+                              approveAttendance(record.id, 'REJECTED', val);
+                            }}
+                            className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-slate-100 text-slate-500 rounded-full cursor-pointer transition font-semibold"
+                          >
+                            Tolak
+                          </button>
+                          <button
+                            id={`btn-approve-attendance-${record.id}`}
+                            onClick={() => {
+                              const val = (document.getElementById(`input-reason-attendance-${record.id}`) as HTMLInputElement)?.value || 'Rekap kehadiran dinas pelayan disahkan secara resmi';
+                              approveAttendance(record.id, 'APPROVED', val);
+                            }}
+                            className="px-3 py-1.5 text-[10px] uppercase tracking-wider bg-[#1A1A1A] hover:bg-opacity-90 text-white font-bold rounded-full cursor-pointer transition"
+                          >
+                            Validasi Presensi
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -811,6 +914,199 @@ export default function GembalaDashboard() {
                   Lantik Pengurus Baru
                 </button>
               </form>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* METRIC DETAILS DROPDOWN/MODAL */}
+      {clickedMetric && (
+        <div id="metric-info-modal-overlay" className="fixed inset-0 bg-[#1a1a1a]/80 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-6 relative border border-[#1A1A1A]/10 max-h-[85vh] overflow-y-auto shadow-2xl transition-all">
+            
+            <button
+              id="btn-close-metric-modal"
+              onClick={() => setClickedMetric(null)}
+              className="absolute top-6 right-6 p-2 bg-[#F2F1ED] hover:bg-[#E8E6E1] text-[#1A1A1A]/85 rounded-full cursor-pointer transition"
+            >
+              <XCircle className="h-5 w-5" />
+            </button>
+
+            {clickedMetric === 'KAS' && (() => {
+              const chFinances = finances.filter(f => f.churchId === activeChurch.id);
+              return (
+                <div className="space-y-4 font-sans text-xs">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/40">Koleksi Audit Wilayah</span>
+                    <h3 className="font-serif italic text-2xl text-[#1A1A1A] font-bold">Rincian Buku Kas Keuangan Cabang</h3>
+                    <p className="text-slate-500 leading-relaxed">Berikut adalah sirkulasi aliran kas keuangan yang diajukan oleh Bendahara terdaftar. Mutasi berlogo Hijau/Merah menandakan status penyetujuan Gembala.</p>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[350px] border border-slate-100 rounded-xl divide-y divide-slate-100">
+                    {chFinances.length === 0 ? (
+                      <div className="p-8 text-center text-slate-450 italic">Belum ada mutasi keuangan tercatat.</div>
+                    ) : (
+                      chFinances.map(f => (
+                        <div key={f.id} className="p-3 flex justify-between items-center hover:bg-slate-50/50">
+                          <div>
+                            <div className="font-bold text-[#1A1A1A]">{f.category}</div>
+                            <div className="text-slate-400 text-[10px] font-mono">{f.date} | Pengentri: {f.inputBy}</div>
+                            <p className="text-slate-500 italic mt-0.5">"{f.description}"</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`font-bold block text-sm ${f.type === 'INCOME' ? 'text-emerald-700' : 'text-red-700'}`}>
+                              {f.type === 'INCOME' ? '+' : '-'} Rp {f.amount.toLocaleString('id-ID')}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-1 ${
+                              f.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : f.status === 'REJECTED' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-amber-50 text-amber-700'
+                            }`}>
+                              {f.status === 'APPROVED' ? 'Disetujui' : f.status === 'REJECTED' ? 'Ditolak' : 'Tertunda'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {clickedMetric === 'ANGGOTA' && (() => {
+              const chMembers = users.filter(u => u.churchId === activeChurch.id);
+              return (
+                <div className="space-y-4 font-sans text-xs">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/40">Koleksi Keanggotaan</span>
+                    <h3 className="font-serif italic text-2xl text-[#1A1A1A] font-bold">Anggota Jemaat Terdaftar</h3>
+                    <p className="text-slate-500 leading-relaxed">Data riil personil jemaat yang tercatat mendaftarkan dirinya ke gereja lokal {activeChurch.name} melalui formulir pendaftaran.</p>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[350px] border border-slate-100 rounded-xl divide-y divide-slate-100">
+                    {chMembers.length === 0 ? (
+                      <div className="p-8 text-center text-slate-450 italic">Belum ada jemaat terdaftar.</div>
+                    ) : (
+                      chMembers.map(m => (
+                        <div key={m.id} className="p-3.5 flex justify-between items-center hover:bg-slate-50/50">
+                          <div>
+                            <div className="font-bold text-[#1A1A1A] text-sm">{m.name}</div>
+                            <div className="text-slate-400 text-[10px] font-mono">{m.email} | {m.phone}</div>
+                            <div className="text-slate-500 mt-1">Alamat: {m.address}</div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-bold text-[#1A1A1A] block">{m.role}</span>
+                            <span className="text-[10px] text-indigo-700 font-bold block">{m.serviceRole || 'Jemaat'}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-1 ${
+                              m.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700'
+                            }`}>
+                              {m.status === 'APPROVED' ? 'Sah' : 'Pending'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {clickedMetric === 'PELAYAN' && (() => {
+              const chServants = users.filter(u => u.churchId === activeChurch.id && u.serviceRole && u.serviceRole !== 'Jemaat Biasa');
+              return (
+                <div className="space-y-4 font-sans text-xs">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/40">Korps Pelayanan Kudus</span>
+                    <h3 className="font-serif italic text-2xl text-[#1A1A1A] font-bold">Pelayan Mimbar & Staff Kantor</h3>
+                    <p className="text-slate-500 leading-relaxed">Roster pengurus, sekretaris, bendahara, pemusik, pendoa, dan pelayan mimbar terpilih yang memegang mandat aktif dalam administrasi gereja.</p>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[350px] border border-slate-100 rounded-xl divide-y divide-slate-100">
+                    {chServants.length === 0 ? (
+                      <div className="p-8 text-center text-slate-450 italic">Belum ada pelayan mimbar dikonfigurasi.</div>
+                    ) : (
+                      chServants.map(s => (
+                        <div key={s.id} className="p-3.5 flex justify-between items-center hover:bg-slate-50/50">
+                          <div>
+                            <div className="font-bold text-[#1A1A1A] text-sm">{s.name}</div>
+                            <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-150 text-[9px] font-bold uppercase tracking-wider mt-1 inline-block">
+                              Spesialis: {s.serviceRole}
+                            </span>
+                            <div className="text-slate-400 text-[10px] font-mono mt-1">{s.email} | {s.phone}</div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-bold text-slate-800 text-[10px] block font-mono">{s.officerTitle || 'Pelayan Komitmen'}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-1 ${
+                              s.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700'
+                            }`}>
+                              Active
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {clickedMetric === 'TINDAKAN' && (() => {
+              // Filter audittrail action logs linked to their action, actor, or church
+              const chLogs = actionLogs ? actionLogs.filter((log: any) => 
+                log.targetName.toLowerCase().includes(activeChurch.name.toLowerCase()) ||
+                log.actorName.toLowerCase().includes(currentUser.name.toLowerCase()) ||
+                users.some(u => u.churchId === activeChurch.id && u.name.toLowerCase() === log.actorName.toLowerCase())
+              ) : [];
+
+              return (
+                <div className="space-y-4 font-sans text-xs">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/40">Audit Trail Keamanan</span>
+                    <h3 className="font-serif italic text-2xl text-[#1A1A1A] font-bold">Histori Tindakan Cabang & Pertimbangan</h3>
+                    <p className="text-slate-500 leading-relaxed">Rekaman otomatis atas seluruh aksi verifikasi, audit keuangan, legalisasi sekretariat, dan alasan tertulis yang diterbitkan oleh Gembala.</p>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[350px] border border-slate-100 rounded-xl divide-y divide-slate-100">
+                    {chLogs.length === 0 ? (
+                      <div className="p-8 text-center text-slate-450 italic">Belum ada mutasi tindakan terekam.</div>
+                    ) : (
+                      chLogs.map((log: any) => (
+                        <div key={log.id} className="p-3.5 space-y-2 hover:bg-slate-50/30">
+                          <div className="flex justify-between items-center text-[10.5px]">
+                            <span className="bg-indigo-50 text-indigo-700 text-[9px] font-bold px-2 py-0.5 rounded border border-indigo-150 uppercase tracking-wide">
+                              {log.actionType}
+                            </span>
+                            <span className="font-mono text-slate-450 font-bold">{new Date(log.timestamp).toLocaleString('id-ID')}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#1A1A1A]">Target: <span className="text-indigo-900 font-serif font-bold italic">{log.targetName}</span></p>
+                            <p className="text-slate-650 bg-slate-50 border border-slate-150 p-2 rounded-lg mt-1 font-sans italic">
+                              Alasan Pertimbangan: "{log.reason || 'Sesuai dengan kriteria umum'}"
+                            </p>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-slate-450 pt-1">
+                            <span>Aktor: <strong className="text-slate-700">{log.actorName} ({log.actorRole})</strong></span>
+                            <span className={`px-1.5 py-0.5 rounded font-bold ${
+                              log.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'
+                            }`}>
+                              {log.status === 'APPROVED' ? 'SAH ✓' : 'TOLAK ✗'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <button
+                id="btn-close-modal-bottom"
+                onClick={() => setClickedMetric(null)}
+                className="px-5 py-2.5 bg-[#1A1A1A] hover:bg-opacity-90 text-white text-xs font-bold uppercase tracking-widest rounded-full cursor-pointer shadow-xs transition"
+              >
+                Tutup Jendela Audit
+              </button>
             </div>
 
           </div>

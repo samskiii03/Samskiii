@@ -115,6 +115,17 @@ export interface AppNotification {
   date: string;
 }
 
+export interface ActionLog {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  actorRole: string;
+  actionType: string; // e.g., "VERIFIKASI_GEREJA", "VERIFIKASI_ANGGOTA", "PERSETUJUAN_KEUANGAN", "PERSETUJUAN_AGENDA", "PERSETUJUAN_ABSENSI"
+  targetName: string;
+  status: 'APPROVED' | 'REJECTED' | 'PENDING' | 'SUBMITTED';
+  reason: string;
+}
+
 export interface GlobalSettings {
   title: string;
   subtitle: string;
@@ -126,4 +137,5 @@ export interface GlobalSettings {
   showStats: boolean;
   backgroundStyle: 'warm' | 'cool' | 'dark' | 'classic';
 }
+
 

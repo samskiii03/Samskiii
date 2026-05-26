@@ -64,7 +64,7 @@ export default function LandingPage() {
       return;
     }
 
-    registerUser({
+    const result = registerUser({
       name: userName,
       email: userEmail,
       phone: userPhone,
@@ -76,6 +76,11 @@ export default function LandingPage() {
       serviceRole: userServiceRole,
       password: userPass
     });
+
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
 
     setUserRegSuccess(true);
     setTimeout(() => {
@@ -104,7 +109,7 @@ export default function LandingPage() {
 
     const defaultLogoUrl = chLogo || 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=200';
 
-    registerChurch({
+    const result = registerChurch({
       name: chName,
       address: chAddress,
       permitNumber: chPermit,
@@ -112,6 +117,11 @@ export default function LandingPage() {
       pastorName: chPastorName,
       pastorEmail: chPastorEmail,
     }, chPastorEmail, chPastorPass);
+
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
 
     setChRegSuccess(true);
     setTimeout(() => {
