@@ -42,6 +42,10 @@ export default function PusatDashboard() {
   const [heroStatement, setHeroStatement] = useState('');
   const [churchCustomFeedback, setChurchCustomFeedback] = useState('');
 
+  // Selected church for sending official warnings
+  const [warningChurchId, setWarningChurchId] = useState('');
+  const [warningMessageText, setWarningMessageText] = useState('Peringatan: Harap segera penuhi ketentuan administrasi dan keselarasan dokumen laporan berkala.');
+
   // Selected Proposal for detailed dossier viewing
   const [reviewProposalId, setReviewProposalId] = useState<string | null>(null);
 
@@ -69,6 +73,11 @@ export default function PusatDashboard() {
   const [memberStatusFilter, setMemberStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING_VERIFICATION' | 'REJECTED'>('ALL');
   const [searchMemberQuery, setSearchMemberQuery] = useState('');
   const [memberJustificationReason, setMemberJustificationReason] = useState('Konfirmasi ulang kelengkapan administrasi dan keanggotaan sah jemaat');
+
+  // Filtering states for Church Directory
+  const [churchStatusFilter, setChurchStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING_VERIFICATION' | 'REJECTED'>('ALL');
+  const [searchChurchQuery, setSearchChurchQuery] = useState('');
+  const [churchActionFeedback, setChurchActionFeedback] = useState('');
 
   // Notification Builder state
   const [notifTarget, setNotifTarget] = useState('GLOBAL');
@@ -333,143 +342,331 @@ export default function PusatDashboard() {
         <div className="lg:col-span-8 space-y-8">
           
           {/* TAB 1: Total Gereja Directory & Custom Launching Setup */}
-          {activeView === 'churches' && (
-            <div className="bg-white rounded-3xl shadow-xs border border-[#1A1A1A]/10 overflow-hidden space-y-6">
-              <div className="border-b border-[#1A1A1A]/10 px-6 py-5 bg-[#F2F1ED]/20 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <h3 className="font-serif italic font-bold text-lg text-[#1A1A1A] flex items-center gap-2">
-                    <Landmark className="h-5 w-5" />
-                    Direktori Seluruh Cabang Gereja Lokal ({churches.length})
-                  </h3>
-                  <p className="text-xs text-slate-500">Daftar jaringan resmi gereja lokal yang legalitasnya diakui oleh sinode pusat Meta Connect.</p>
-                </div>
-              </div>
+          {activeView === 'churches' && (() => {
+            const filteredChurches = churches.filter(ch => {
+              if (churchStatusFilter !== 'ALL' && ch.status !== churchStatusFilter) return false;
+              if (searchChurchQuery.trim()) {
+                const q = searchChurchQuery.toLowerCase();
+                return (
+                  ch.name.toLowerCase().includes(q) ||
+                  ch.address.toLowerCase().includes(q) ||
+                  ch.pastorName.toLowerCase().includes(q) ||
+                  ch.permitNumber.toLowerCase().includes(q)
+                );
+              }
+              return true;
+            });
 
-              <div className="px-6 divide-y divide-[#1A1A1A]/5">
-                {churches.length === 0 ? (
-                  <p className="py-8 text-center text-xs text-slate-400">Belum ada data gereja tersimpan.</p>
-                ) : (
-                  churches.map(ch => (
-                    <div key={ch.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center space-x-4">
-                        <img 
-                          src={ch.logoUrl || "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=200"}
-                          alt="Logo"
-                          referrerPolicy="no-referrer"
-                          className="h-12 w-12 object-cover rounded-xl border border-[#1A1A1A]/10 shrink-0"
-                        />
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold text-sm text-[#1A1A1A]">{ch.name}</span>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                              ch.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-                              ch.status === 'REJECTED' ? 'bg-red-50 text-red-800 border border-red-200' :
-                              'bg-amber-50 text-amber-800 border border-amber-200'
-                            }`}>
-                              {ch.status}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500">{ch.address}</p>
-                          <p className="text-[10px] font-mono opacity-60">Izin Kemenag: {ch.permitNumber} | Gembala: {ch.pastorName}</p>
-                        </div>
-                      </div>
+            const handleSendChurchWarning = (chId: string, chName: string) => {
+              if (!warningMessageText.trim()) return;
+              sendNotification('WARNING', `Peringatan Resmi Sinode Pusat: ${chName}`, warningMessageText, chId);
+              setWarningChurchId('');
+              setChurchActionFeedback(`Peringatan resmi sukses terkirim ke pihak Gembala Cabang ${chName}!`);
+              setTimeout(() => setChurchActionFeedback(''), 5000);
+            };
 
-                      <div className="flex items-center space-x-2">
-                        <button
-                          id={`btn-manage-config-${ch.id}`}
-                          onClick={() => handleSelectChurchToCustomize(ch.id)}
-                          className={`px-3 py-1.5 text-[11px] font-bold rounded-lg border transition flex items-center gap-1 cursor-pointer ${
-                            selectedChurchId === ch.id 
-                              ? 'bg-[#1A1A1A] text-white' 
-                              : 'bg-white hover:bg-[#F2F1ED] text-[#1A1A1A] border-[#1A1A1A]/10'
-                          }`}
-                        >
-                          <Edit className="h-3 w-3" />
-                          <span>Atur Launching</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Dynamic launching setup details for church */}
-              {selectedChurchId && (
-                <div className="m-6 p-6 bg-[#F2F1ED]/40 border border-[#1A1A1A]/10 rounded-2xl space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-serif italic font-bold text-sm text-[#1A1A1A]">
-                      Pengaturan Tampilan Awal Gereja Lokal: {churches.find(c => c.id === selectedChurchId)?.name}
-                    </h4>
-                    <button 
-                      onClick={() => setSelectedChurchId('')}
-                      className="text-xs text-red-600 hover:underline font-bold"
-                    >
-                      Batal Edit
-                    </button>
+            return (
+              <div id="sinode-churches-control-tab" className="bg-white rounded-3xl shadow-xs border border-[#1A1A1A]/10 overflow-hidden space-y-6 pb-6">
+                <div className="border-b border-[#1A1A1A]/10 px-6 py-5 bg-[#F2F1ED]/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <h3 className="font-serif italic font-bold text-lg text-[#1A1A1A] flex items-center gap-2">
+                       <Landmark className="h-5 w-5 text-indigo-800" />
+                       Kontrol Syarat Wilayah & Direktori Cabang ({churches.length} Cabang)
+                    </h3>
+                    <p className="text-xs text-slate-500 font-sans">Otoritas peninjauan penuh Sinode Pusat Meta Connect untuk menyetujui, menolak/menangguhkan, menertibkan tertulis, atau menghapus pendaftaran cabang gereja.</p>
                   </div>
-                  
-                  <p className="text-[11px] text-[#1A1A1A]/60 leading-relaxed">
-                    Ubah struktur kelayakan informasi dasar dan skema launching gereja ini sebelum tampil ke halaman utama dan dapat diakses oleh jemaat lokalnya.
-                  </p>
+                </div>
 
-                  <form onSubmit={saveChurchLaunchConfiguration} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Koreksi Nama Gereja</label>
-                      <input 
-                        type="text" 
-                        value={churchName} 
-                        onChange={(e)=>setChurchName(e.target.value)} 
-                        className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Nomor Izin Kemenag</label>
-                      <input 
-                        type="text" 
-                        value={churchPermit} 
-                        onChange={(e)=>setChurchPermit(e.target.value)} 
-                        className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
-                        required
-                      />
-                    </div>
-
-                    <div className="col-span-1 md:col-span-2 space-y-1">
-                      <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Koreksi Alamat Lengkap</label>
-                      <input 
-                        type="text" 
-                        value={churchAddress} 
-                        onChange={(e)=>setChurchAddress(e.target.value)} 
-                        className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
-                        required
-                      />
-                    </div>
-
-                    <div className="col-span-1 md:col-span-2 space-y-2">
-                      <label className="text-[10px] font-bold text-[#1A1A1A]/70 uppercase tracking-widest block font-sans">Foto Logo Cabang Gereja (Logo Attachment)</label>
-                      
-                      <div 
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const file = e.dataTransfer.files?.[0];
-                          if (file && file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setChurchLogo(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="border-2 border-dashed border-[#1A1A1A]/20 rounded-2xl p-6 text-center hover:border-[#1A1A1A]/50 transition cursor-pointer bg-white relative overflow-hidden"
+                {/* Search & Status Filters */}
+                <div className="px-6 space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#F2F1ED]/30 p-4 rounded-2xl border border-[#1A1A1A]/10 text-xs font-sans">
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        id="btn-church-filter-all"
+                        type="button"
+                        onClick={() => setChurchStatusFilter('ALL')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          churchStatusFilter === 'ALL'
+                            ? 'bg-[#1A1A1A] text-white shadow-xs'
+                            : 'bg-white/80 hover:bg-[#F2F1ED] text-slate-600 border border-[#1A1A1A]/10'
+                        }`}
                       >
+                        Semua ({churches.length})
+                      </button>
+                      <button
+                        id="btn-church-filter-approved"
+                        type="button"
+                        onClick={() => setChurchStatusFilter('APPROVED')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          churchStatusFilter === 'APPROVED'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white/80 hover:bg-[#F2F1ED] text-slate-600 border border-[#1A1A1A]/10'
+                        }`}
+                      >
+                        Aktif / Sah ({churches.filter(c => c.status === 'APPROVED').length})
+                      </button>
+                      <button
+                        id="btn-church-filter-pending"
+                        type="button"
+                        onClick={() => setChurchStatusFilter('PENDING_VERIFICATION')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          churchStatusFilter === 'PENDING_VERIFICATION'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'bg-white/80 hover:bg-[#F2F1ED] text-slate-600 border border-[#1A1A1A]/10'
+                        }`}
+                      >
+                        Menunggu ({churches.filter(c => c.status === 'PENDING_VERIFICATION').length})
+                      </button>
+                      <button
+                        id="btn-church-filter-rejected"
+                        type="button"
+                        onClick={() => setChurchStatusFilter('REJECTED')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          churchStatusFilter === 'REJECTED'
+                            ? 'bg-rose-700 text-white shadow-xs'
+                            : 'bg-white/80 hover:bg-[#F2F1ED] text-slate-600 border border-[#1A1A1A]/10'
+                        }`}
+                      >
+                        Ditangguhkan ({churches.filter(c => c.status === 'REJECTED').length})
+                      </button>
+                    </div>
+
+                    <div className="w-full md:w-64">
+                      <input
+                        type="text"
+                        placeholder="Cari nama gereja, pastor, alamat..."
+                        value={searchChurchQuery}
+                        onChange={(e) => setSearchChurchQuery(e.target.value)}
+                        className="w-full text-xs px-3.5 py-1.5 rounded-xl border border-[#1A1A1A]/15 bg-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {churchActionFeedback && (
+                    <div className="p-3 bg-indigo-50 border border-indigo-150 rounded-xl text-indigo-900 text-xs font-sans font-bold flex items-center gap-1.5 animate-pulse">
+                      <CheckCircle className="h-4 w-4 text-indigo-700" />
+                      {churchActionFeedback}
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 divide-y divide-[#1A1A1A]/5 space-y-4">
+                  {filteredChurches.length === 0 ? (
+                    <p className="py-8 text-center text-xs text-slate-400 font-sans italic">Tidak ditemukan cabang gereja dalam database berdasarkan pencarian/status saat ini.</p>
+                  ) : (
+                    filteredChurches.map(ch => (
+                      <div key={ch.id} className="py-4 space-y-4 font-sans">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                          <div className="flex items-start space-x-4">
+                            <img 
+                              src={ch.logoUrl || "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=200"}
+                              alt="Logo"
+                              referrerPolicy="no-referrer"
+                              className="h-12 w-12 object-cover rounded-xl border border-[#1A1A1A]/10 shrink-0 shadow-xs"
+                            />
+                            <div>
+                              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                                <span className="font-bold text-[#1A1A1A] text-sm font-serif italic">{ch.name}</span>
+                                <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                  ch.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                                  ch.status === 'REJECTED' ? 'bg-red-50 text-red-800 border border-red-200' :
+                                  'bg-amber-50 text-amber-800 border border-amber-200'
+                                }`}>
+                                  {ch.status}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 mt-0.5">{ch.address}</p>
+                              <p className="text-[10px] font-mono opacity-60 mt-0.5">Kemenag No: {ch.permitNumber} | Pastor: {ch.pastorName} ({ch.pastorEmail})</p>
+                            </div>
+                          </div>
+
+                          {/* Control Actions Panel */}
+                          <div className="flex flex-wrap items-center gap-1.5 self-start lg:self-auto">
+                            {/* Warning trigger */}
+                            <button
+                              id={`btn-toggle-warning-${ch.id}`}
+                              onClick={() => {
+                                setWarningChurchId(warningChurchId === ch.id ? '' : ch.id);
+                              }}
+                              className={`px-3 py-1.5 text-[10.5px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer font-sans ${
+                                warningChurchId === ch.id
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-amber-50 hover:bg-amber-100/50 text-amber-850 border border-amber-200'
+                              }`}
+                              title="Tulis teguran tertulis langsung ke jemaat lokal ini"
+                            >
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              <span>Beri Peringatan</span>
+                            </button>
+
+                            {/* Launch Setup */}
+                            <button
+                              id={`btn-manage-config-${ch.id}`}
+                              onClick={() => handleSelectChurchToCustomize(ch.id)}
+                              className={`px-3 py-1.5 text-[10.5px] font-bold rounded-lg border transition flex items-center gap-1 cursor-pointer font-sans ${
+                                selectedChurchId === ch.id 
+                                  ? 'bg-[#1A1A1A] text-white' 
+                                  : 'bg-white hover:bg-[#F2F1ED] text-[#1A1A1A] border-[#1A1A1A]/10'
+                              }`}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                              <span>Atur Launching</span>
+                            </button>
+
+                            {/* Accept/Approve Buttons if not APPROVED */}
+                            {ch.status !== 'APPROVED' && (
+                              <button
+                                id={`btn-approve-direct-${ch.id}`}
+                                onClick={() => {
+                                  verifyChurch(ch.id, 'APPROVED', 'Disahkan dan diaktifkan kembali kelancaran operasionalnya oleh Keputusan Rapat Sinode Pusat.');
+                                  setChurchActionFeedback(`Gereja ${ch.name} berhasil disahkan dan aktif penuh!`);
+                                  setTimeout(() => setChurchActionFeedback(''), 5000);
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 shadow-xs font-sans"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                <span>Sahkan Cabang</span>
+                              </button>
+                            )}
+
+                            {/* Reject / Suspended Button if not REJECTED */}
+                            {ch.status !== 'REJECTED' && (
+                              <button
+                                id={`btn-reject-direct-${ch.id}`}
+                                onClick={() => {
+                                  const reason = window.prompt(`Masukkan alasan penangguhan untuk gereja ${ch.name}:`, 'Ditolak/ditangguhkan oleh Rektor Sinode Pusat karena ketidaklengkapan administrasi tahunan.');
+                                  if (reason !== null) {
+                                    verifyChurch(ch.id, 'REJECTED', reason || 'Ditangguhkan oleh keputusan sinode pusat.');
+                                    setChurchActionFeedback(`Laporan administratif: ${ch.name} ditangguhkan.`);
+                                    setTimeout(() => setChurchActionFeedback(''), 5000);
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 font-sans border border-rose-200"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                                <span>Tolak / Tangguhkan</span>
+                              </button>
+                            )}
+
+                            {/* Force Delete Button */}
+                            <button
+                              id={`btn-delete-direct-${ch.id}`}
+                              onClick={() => {
+                                if (window.confirm(`PERINGATAN KRITIS: Menghapus "${ch.name}" akan melenyapkan pendaftaran gereja ini dan melarang semua pengurus maupun jemaat lokalnya masuk platform Meta Connect selamanya. Apakah Anda 100% yakin ingin melanjutkan?`)) {
+                                  deleteChurch(ch.id);
+                                  setChurchActionFeedback(`Data pendaftaran ${ch.name} berhasil dihapus permanen!`);
+                                  setTimeout(() => setChurchActionFeedback(''), 5000);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10.5px] font-bold cursor-pointer transition font-sans"
+                            >
+                              Hapus Permanen
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Slide open Inline Warning Editor form */}
+                        {warningChurchId === ch.id && (
+                          <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 text-xs font-sans space-y-3 animate-fade-in">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4 text-amber-600" />
+                              <span className="font-bold text-amber-800 font-serif italic text-[13px]">Buka Teguran / Peringatan Resmi Cabang</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-relaxed">Kirim peringatan resmi untuk pelanggaran kepatuhan, kejanggalan laporan keuangan, atau ketidakjelasan izin aktivitas kemenag. Pesan akan instan tampil di halaman utama Gembala Cabang.</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input 
+                                type="text"
+                                value={warningMessageText}
+                                onChange={(e) => setWarningMessageText(e.target.value)}
+                                className="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none text-slate-800"
+                                required
+                              />
+                              <div className="flex gap-1.5 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => setWarningChurchId('')}
+                                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer"
+                                >
+                                  Batal
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendChurchWarning(ch.id, ch.name)}
+                                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs"
+                                >
+                                  Kirim Sekarang
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Dynamic launching setup details for church */}
+                {selectedChurchId && (
+                  <div className="m-6 p-6 bg-[#F2F1ED]/40 border border-[#1A1A1A]/10 rounded-2xl space-y-4 font-sans">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-serif italic font-bold text-sm text-[#1A1A1A]">
+                        Pengaturan Tampilan Awal & Launching Cabang: {churches.find(c => c.id === selectedChurchId)?.name}
+                      </h4>
+                      <button 
+                        onClick={() => setSelectedChurchId('')}
+                        className="text-xs text-red-650 hover:underline font-bold"
+                      >
+                        Batal Edit Tampilan
+                      </button>
+                    </div>
+                    
+                    <p className="text-[11px] text-[#1A1A1A]/60 leading-relaxed">
+                      Lakukan penyesuaian identitas visual, teks slogan penyambutan hari peluncuran, serta lampiran cover/logo gereja cabang lokal terpilih.
+                    </p>
+
+                    <form onSubmit={saveChurchLaunchConfiguration} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Koreksi Nama Gereja Resmi</label>
                         <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
+                          type="text" 
+                          value={churchName} 
+                          onChange={(e)=>setChurchName(e.target.value)} 
+                          className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Nomor Izin Kemenag</label>
+                        <input 
+                          type="text" 
+                          value={churchPermit} 
+                          onChange={(e)=>setChurchPermit(e.target.value)} 
+                          className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
+                          required
+                        />
+                      </div>
+
+                      <div className="col-span-1 md:col-span-2 space-y-1">
+                        <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Koreksi Alamat Lengkap Cabang</label>
+                        <input 
+                          type="text" 
+                          value={churchAddress} 
+                          onChange={(e)=>setChurchAddress(e.target.value)} 
+                          className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
+                          required
+                        />
+                      </div>
+
+                      <div className="col-span-1 md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-bold text-[#1A1A1A]/70 uppercase tracking-widest block font-sans">Foto Logo Cabang Gereja (Logo Attachment)</label>
+                        
+                        <div 
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const file = e.dataTransfer.files?.[0];
+                            if (file && file.type.startsWith('image/')) {
                               const reader = new FileReader();
                               reader.onload = () => {
                                 setChurchLogo(reader.result as string);
@@ -477,94 +674,109 @@ export default function PusatDashboard() {
                               reader.readAsDataURL(file);
                             }
                           }}
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                        />
-                        {churchLogo ? (
-                          <div className="space-y-3 flex flex-col items-center relative z-10">
-                            <img src={churchLogo} alt="Preview Logo" referrerPolicy="no-referrer" className="h-16 w-16 object-cover rounded-xl border border-[#1A1A1A]/10" />
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider block">Foto Logo Terlampir ✓</span>
-                              <button 
-                                type="button" 
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setChurchLogo(''); }}
-                                className="text-[10px] text-red-650 hover:text-red-850 font-bold underline mt-1 cursor-pointer"
-                              >
-                                Hapus / Ganti Lampiran
-                              </button>
+                          className="border-2 border-dashed border-[#1A1A1A]/20 rounded-2xl p-6 text-center hover:border-[#1A1A1A]/50 transition cursor-pointer bg-white relative overflow-hidden"
+                        >
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  setChurchLogo(reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          />
+                          {churchLogo ? (
+                            <div className="space-y-3 flex flex-col items-center relative z-10">
+                              <img src={churchLogo} alt="Preview Logo" referrerPolicy="no-referrer" className="h-16 w-16 object-cover rounded-xl border border-[#1A1A1A]/10" />
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider block">Foto Logo Terlampir ✓</span>
+                                <button 
+                                  type="button" 
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setChurchLogo(''); }}
+                                  className="text-[10px] text-red-650 hover:text-red-850 font-bold underline mt-1 cursor-pointer"
+                                >
+                                  Hapus / Ganti Lampiran
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2 text-[#1A1A1A] py-2">
-                            <UploadCloud className="h-8 w-8 text-slate-400 mx-auto" />
-                            <div className="text-xs font-bold uppercase tracking-wider text-slate-600">Tarik Logo Kemari / Klik untuk Pilih Berkas</div>
-                            <div className="text-[9px] opacity-60 font-sans">Mendukung berkas Gambar .png, .jpg (Maks 2MB)</div>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="space-y-2 text-[#1A1A1A] py-2">
+                              <UploadCloud className="h-8 w-8 text-slate-400 mx-auto" />
+                              <div className="text-xs font-bold uppercase tracking-wider text-slate-600">Tarik Logo Kemari / Klik untuk Pilih Berkas</div>
+                              <div className="text-[9px] opacity-60 font-sans">Mendukung berkas Gambar .png, .jpg (Maks 2MB)</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Atau masukkan URL Logo secara manual (Opsional):</label>
+                          <input 
+                            type="text" 
+                            value={churchLogo} 
+                            onChange={(e)=>setChurchLogo(e.target.value)} 
+                            placeholder="https://example.com/logo.png"
+                            className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
+                          />
+                        </div>
                       </div>
 
-                      <div className="pt-2">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Atau masukkan URL Logo secara manual (Opsional):</label>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Warna Aksen Unik (Hex)</label>
+                        <div className="flex space-x-2">
+                          <input 
+                            type="color" 
+                            value={accentColor} 
+                            onChange={(e)=>setAccentColor(e.target.value)} 
+                            className="w-10 h-8 rounded border p-0.5 bg-white cursor-pointer"
+                          />
+                          <input 
+                            type="text" 
+                            value={accentColor} 
+                            onChange={(e)=>setAccentColor(e.target.value)} 
+                            className="flex-1 text-xs border border-[#1A1A1A]/15 rounded-lg px-2 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block font-sans">Slogan Utama / Statement Hero</label>
                         <input 
                           type="text" 
-                          value={churchLogo} 
-                          onChange={(e)=>setChurchLogo(e.target.value)} 
-                          placeholder="https://example.com/logo.png"
+                          value={heroStatement} 
+                          onChange={(e)=>setHeroStatement(e.target.value)} 
+                          placeholder="Diberkati untuk Memberkati..."
                           className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
                         />
                       </div>
-                    </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block">Warna Aksen Unik (Hex)</label>
-                      <div className="flex space-x-2">
-                        <input 
-                          type="color" 
-                          value={accentColor} 
-                          onChange={(e)=>setAccentColor(e.target.value)} 
-                          className="w-10 h-8 rounded border p-0.5 bg-white cursor-pointer"
-                        />
-                        <input 
-                          type="text" 
-                          value={accentColor} 
-                          onChange={(e)=>setAccentColor(e.target.value)} 
-                          className="flex-1 text-xs border border-[#1A1A1A]/15 rounded-lg px-2 bg-white"
-                        />
+                      {churchCustomFeedback && (
+                        <div className="col-span-1 md:col-span-2 p-2.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold tracking-wide uppercase border border-emerald-200 rounded text-center">
+                          {churchCustomFeedback}
+                        </div>
+                      )}
+
+                      <div className="col-span-1 md:col-span-2 flex justify-end space-x-2 pt-2">
+                        <button
+                          id="btn-save-church-launch"
+                          type="submit"
+                          className="px-6 py-2.5 bg-[#1A1A1A] hover:bg-opacity-90 text-white rounded-full text-xs font-bold uppercase tracking-widest cursor-pointer"
+                        >
+                          Terapkan launching & Tampilan Cabang
+                        </button>
                       </div>
-                    </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-[#1A1A1A]/60 uppercase tracking-wider block font-sans">Slogan Utama / Statement Hero</label>
-                      <input 
-                        type="text" 
-                        value={heroStatement} 
-                        onChange={(e)=>setHeroStatement(e.target.value)} 
-                        placeholder="Diberkati untuk Memberkati..."
-                        className="w-full text-xs p-2.5 border border-[#1A1A1A]/15 rounded-lg bg-white"
-                      />
-                    </div>
-
-                    {churchCustomFeedback && (
-                      <div className="col-span-1 md:col-span-2 p-2.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold tracking-wide uppercase border border-emerald-200 rounded text-center">
-                        {churchCustomFeedback}
-                      </div>
-                    )}
-
-                    <div className="col-span-1 md:col-span-2 flex justify-end space-x-2 pt-2">
-                      <button
-                        id="btn-save-church-launch"
-                        type="submit"
-                        className="px-6 py-2.5 bg-[#1A1A1A] hover:bg-opacity-90 text-white rounded-full text-xs font-bold uppercase tracking-widest cursor-pointer"
-                      >
-                        Terapkan launching & Tampilan Cabang
-                      </button>
-                    </div>
-
-                  </form>
-                </div>
-              )}
-
-            </div>
-          )}
+                    </form>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
                     {/* TAB 2: Global Anggota Aktif Directory */}
           {activeView === 'members' && (() => {
             const filteredUsers = users.filter(u => {
