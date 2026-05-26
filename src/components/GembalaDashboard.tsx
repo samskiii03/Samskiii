@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useMetaConnect } from '../context/MetaConnectContext';
 import { 
   Award, Users, CheckCircle, XCircle, DollarSign, Calendar, BookOpen, UserPlus, 
-  Clock, Check, ShieldCheck, ArrowUpRight, Zap, Play, Lock, Trash2, Key, Sparkles
+  Clock, Check, ShieldCheck, ArrowUpRight, Zap, Play, Lock, Trash2, Key, Sparkles,
+  TrendingUp, BarChart3, ArrowUp, ArrowDown, Info, HelpCircle, Activity
 } from 'lucide-react';
 
 export default function GembalaDashboard() {
@@ -27,7 +28,10 @@ export default function GembalaDashboard() {
     restoreUser
   } = useMetaConnect();
 
-  const [activeSubTab, setActiveSubTab] = useState<'approvals' | 'activity' | 'devotional' | 'staff' | 'members'>('approvals');
+  const [activeSubTab, setActiveSubTab] = useState<'approvals' | 'reports' | 'devotional' | 'staff' | 'members'>('approvals');
+  const [reportsSubView, setReportsSubView] = useState<'visual' | 'engagement'>('visual');
+  const [activeChartHoverIdx, setActiveChartHoverIdx] = useState<number | null>(null);
+  const [selectedDemoFinanceCategory, setSelectedDemoFinanceCategory] = useState<string | null>(null);
   const [localMemberFilter, setLocalMemberFilter] = useState<'ALL' | 'APPROVED' | 'PENDING_VERIFICATION' | 'REJECTED'>('ALL');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [localJustificationReason, setLocalJustificationReason] = useState('Resolusi pemulihan & aktivasi kembali status jemaat oleh Gembala Sidang');
@@ -208,7 +212,7 @@ export default function GembalaDashboard() {
         </div>
 
         <div className="flex bg-[#F2F1ED] rounded-full p-1 border border-[#1A1A1A]/10 max-w-2xl w-full flex-wrap">
-          {(['approvals', 'activity', 'devotional', 'staff', 'members'] as const).map(tab => (
+          {(['approvals', 'reports', 'devotional', 'staff', 'members'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
@@ -219,7 +223,7 @@ export default function GembalaDashboard() {
               }`}
             >
               {tab === 'approvals' && 'Sirkulasi Approval'}
-              {tab === 'activity' && 'Keaktifan'}
+              {tab === 'reports' && 'Analisis & Laporan'}
               {tab === 'devotional' && 'Tulis Firman'}
               {tab === 'staff' && 'Wewenang Staff'}
               {tab === 'members' && 'Administrasi Jemaat'}
@@ -640,57 +644,480 @@ export default function GembalaDashboard() {
         </div>
       )}
 
-      {/* METRIC KEAKTIFAN PANEL */}
-      {activeSubTab === 'activity' && (
-        <div className="bg-white p-8 rounded-3xl border border-[#1A1A1A]/10 space-y-6 shadow-xs">
-          <div className="space-y-1">
-            <h3 className="text-xl font-serif text-[#1A1A1A]">Peringkat Keaktifan Jemaat & Pelayan</h3>
-            <p className="text-xs text-slate-400 font-sans">Skor loyalitas kehadiran dihitung berasarkan rekap presensi dinas ibadah tervalidasi.</p>
-          </div>
+      {/* METRIC KEAKTIFAN & VISUALISASI LAPORAN PANEL */}
+      {activeSubTab === 'reports' && (() => {
+        // Compute statistics for the visualizations
+        // 1. Attendance Data Points
+        const approvedAt = attendance.filter(at => at.churchId === activeChurch.id && at.status === 'APPROVED');
+        // Let's sort approvedAt chronologically
+        const sortedAt = [...approvedAt].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        // Dynamic demo toggle if database has insufficient real data points
+        const isUsingFallbackData = sortedAt.length < 3;
+        const visualizationData = isUsingFallbackData ? [
+          { date: 'Min 1', activityName: 'Ibadah Raya 1', attendanceCount: 75 },
+          { date: 'Min 2', activityName: 'Ibadah Raya 2', attendanceCount: 88 },
+          { date: 'Min 3', activityName: 'Ibadah Raya 3', attendanceCount: 94 },
+          { date: 'Min 4', activityName: 'Ibadah Kebangkitan', attendanceCount: 110 },
+          { date: 'Min 5', activityName: 'Ibadah Raya Penuaian', attendanceCount: 125 }
+        ] : sortedAt.map(at => ({
+          date: at.date,
+          activityName: at.activityName,
+          attendanceCount: at.attendanceCount
+        }));
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {approvedUsers.map(member => {
-              const score = getMemberKeaktifanScore(member.id, member.role, member.serviceRole);
-              let colorClass = 'bg-red-500';
-              let textStatus = 'Pasif / Perlu Pembinaan';
-              let pctColor = 'text-red-750 font-serif font-bold';
-              
-              if (score >= 85) {
-                colorClass = 'bg-emerald-600';
-                textStatus = 'Sangat Aktif / Model Pelayanan';
-                pctColor = 'text-emerald-700 font-serif font-bold';
-              } else if (score >= 70) {
-                colorClass = 'bg-indigo-600';
-                textStatus = 'Presensi Standard Aktif';
-                pctColor = 'text-indigo-700 font-serif font-bold';
-              } else if (score >= 60) {
-                colorClass = 'bg-amber-600';
-                textStatus = 'Cukup Giat / Terpantau standard';
-                pctColor = 'text-amber-700 font-serif font-bold';
-              }
+        // Dimensions of SVG Chart
+        const svgW = 600;
+        const svgH = 220;
+        const mLeft = 50;
+        const mRight = 30;
+        const mTop = 30;
+        const mBottom = 40;
+        const pWidth = svgW - mLeft - mRight;
+        const pHeight = svgH - mTop - mBottom;
 
-              return (
-                <div key={member.id} className="p-5 border border-[#1A1A1A]/10 bg-[#F2F1ED]/10 hover:bg-[#F2F1ED]/25 rounded-2xl hover:border-[#1A1A1A]/20 transition flex items-center justify-between">
-                  <div className="space-y-1 text-xs truncate max-w-[140px] md:max-w-[180px]">
-                    <div className="font-bold text-[#1A1A1A] text-sm truncate">{member.name}</div>
-                    <div className="text-slate-500 font-mono text-[9px] uppercase tracking-wider">{member.serviceRole}</div>
-                    <div className="inline-flex items-center space-x-1.5 mt-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${colorClass}`} />
-                      <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold text-[9px]">{textStatus}</span>
+        const maxAttendance = Math.max(...visualizationData.map(d => d.attendanceCount), 50);
+        // Make nice rounded limit
+        const limitY = Math.ceil((maxAttendance * 1.15) / 10) * 10;
+
+        // Calculate points
+        const numPoints = visualizationData.length;
+        const chartPoints = visualizationData.map((d, index) => {
+          const x = mLeft + (index * pWidth) / Math.max(1, numPoints - 1);
+          const y = (svgH - mBottom) - (d.attendanceCount / limitY) * pHeight;
+          return { x, y, data: d };
+        });
+
+        // Path generator
+        const linePath = chartPoints.length > 0 
+          ? chartPoints.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+          : '';
+        const areaPath = chartPoints.length > 0
+          ? `${linePath} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${(svgH - mBottom).toFixed(1)} L ${chartPoints[0].x.toFixed(1)} ${(svgH - mBottom).toFixed(1)} Z`
+          : '';
+
+        // 2. Finance data categories grouping
+        const activeFinances = finances.filter(f => f.churchId === activeChurch.id && f.status === 'APPROVED');
+        // Group expenses
+        const expensesGrouped = activeFinances.filter(f => f.type === 'EXPENSE').reduce((acc, f) => {
+          const catName = f.category || 'Operasional';
+          acc[catName] = (acc[catName] || 0) + (f.amount || 0);
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Fallback for visual categories
+        const hasExpenses = Object.keys(expensesGrouped).length > 0;
+        const expenseChartData: { category: string; amount: number; color: string }[] = hasExpenses ? Object.entries(expensesGrouped).map(([cat, val]) => ({
+          category: cat,
+          amount: Number(val || 0),
+          color: cat.toLowerCase().includes('sewa') ? '#F43F5E' : 
+                 cat.toLowerCase().includes('media') ? '#3B82F6' :
+                 cat.toLowerCase().includes('alat') ? '#EC4899' :
+                 cat.toLowerCase().includes('operasional') ? '#F59E0B' : '#8B5CF6'
+        })) : [
+          { category: 'Sewa & Gedung', amount: 5000000, color: '#F43F5E' },
+          { category: 'Dinas Musik & Media', amount: 3500000, color: '#3B82F6' },
+          { category: 'Uang Transport Pelayan', amount: 2000000, color: '#8B5CF6' },
+          { category: 'Operasional Altar / Bunga', amount: 1200000, color: '#F59E0B' }
+        ];
+
+        const totalExpenseAllVal = expenseChartData.reduce((acc: number, c) => acc + Number(c.amount || 0), 0);
+
+        // Demographic parameters
+        const totalApprovedMembersVal = approvedUsers.length;
+        const maleCount = approvedUsers.filter(u => u.gender === 'Laki-laki').length;
+        const femaleCount = approvedUsers.filter(u => u.gender === 'Perempuan').length;
+        const genderPercentMale = totalApprovedMembersVal > 0 ? Math.round((maleCount / totalApprovedMembersVal) * 100) : 55;
+        const genderPercentFemale = totalApprovedMembersVal > 0 ? 100 - genderPercentMale : 45;
+
+        const committedServants = approvedUsers.filter(u => u.serviceRole && u.serviceRole !== 'Jemaat Biasa');
+        const generalJemaatCount = approvedUsers.length - committedServants.length;
+        const servicePercent = totalApprovedMembersVal > 0 ? Math.round((committedServants.length / totalApprovedMembersVal) * 100) : 35;
+
+        return (
+          <div className="space-y-8 animate-fade-in font-sans">
+            
+            {/* Header sub-navigation inside the report tab */}
+            <div className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-indigo-700" />
+                  <span className="font-serif italic font-bold text-xl text-[#1A1A1A]">Pondasi Laporan & Dashboard Analitik</span>
+                </div>
+                <p className="text-xs text-slate-500">Analisis visual kesehatan administrasi jemaat, loyalitas kehadiran kebaktian, dan sirkulasi keuangan gereja lokal secara real-time.</p>
+              </div>
+
+              {/* View Switches */}
+              <div className="flex bg-[#F2F1ED] p-1 rounded-2xl border border-[#1A1A1A]/10 self-start md:self-center">
+                <button
+                  type="button"
+                  onClick={() => setReportsSubView('visual')}
+                  className={`px-4 py-2 text-[10.5px] font-bold rounded-xl transition uppercase tracking-wider cursor-pointer ${
+                    reportsSubView === 'visual'
+                      ? 'bg-indigo-650 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <BarChart3 className="h-3.5 w-3.5 inline mr-1.5" />
+                  Grafik Visual Kinerja
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportsSubView('engagement')}
+                  className={`px-4 py-2 text-[10.5px] font-bold rounded-xl transition uppercase tracking-wider cursor-pointer ${
+                    reportsSubView === 'engagement'
+                      ? 'bg-indigo-650 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5 inline mr-1.5" />
+                  Indeks Keaktifan Jemaat
+                </button>
+              </div>
+            </div>
+
+            {/* VIEWS SELECTION */}
+            {reportsSubView === 'visual' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* 1. ATTENDANCE TREND CHART (LEFT-COL) */}
+                <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 shadow-xs space-y-6 relative">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[9px] uppercase font-bold tracking-widest text-[#1A1A1A]/40 font-mono">Pertumbuhan Kehadiran</span>
+                      <h4 className="font-serif italic font-bold text-lg text-[#1A1A1A]">Grafik Tren Kehadiran Ibadah Raya</h4>
+                    </div>
+
+                    {isUsingFallbackData && (
+                      <span className="bg-amber-50 text-amber-800 border border-amber-200 text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Info className="h-3 w-3 text-amber-655" />
+                        Mode Simulasi Visual (Belum Cukup Data)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* SVG Chart Drawing */}
+                  <div className="relative bg-gradient-to-b from-slate-50/20 to-slate-55/15 p-4 rounded-2xl border border-dashed border-[#1A1A1A]/10 flex flex-col items-center">
+                    <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-auto overflow-visible select-none">
+                      <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.25"/>
+                          <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.0"/>
+                        </linearGradient>
+                      </defs>
+
+                      {/* Grid Lines Y-axis */}
+                      {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+                        const yVal = mTop + ratio * pHeight;
+                        const labelValue = Math.round(limitY - ratio * limitY);
+                        return (
+                          <g key={idx} className="opacity-25">
+                            <line 
+                              x1={mLeft} 
+                              y1={yVal} 
+                              x2={svgW - mRight} 
+                              y2={yVal} 
+                              stroke="#1A1A1A" 
+                              strokeWidth="1" 
+                              strokeDasharray="4"
+                            />
+                            <text 
+                              x={mLeft - 10} 
+                              y={yVal + 3} 
+                              textAnchor="end" 
+                              className="text-[9px] font-mono fill-slate-500 font-bold"
+                            >
+                              {labelValue}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {/* X-axis Line */}
+                      <line 
+                        x1={mLeft} 
+                        y1={svgH - mBottom} 
+                        x2={svgW - mRight} 
+                        y2={svgH - mBottom} 
+                        stroke="#1A1A1A" 
+                        strokeWidth="1.5"
+                        className="opacity-20"
+                      />
+
+                      {/* Area Fill */}
+                      <path d={areaPath} fill="url(#chartGradient)" />
+
+                      {/* Line Path */}
+                      <path 
+                        d={linePath} 
+                        fill="none" 
+                        stroke="#4F46E5" 
+                        strokeWidth="3.5" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        className="drop-shadow-xs"
+                      />
+
+                      {/* Interactive Circles & Labels */}
+                      {chartPoints.map((pt, idx) => {
+                        const isHovered = activeChartHoverIdx === idx;
+                        return (
+                          <g key={idx} className="transition-all duration-300 pointer-events-auto">
+                            {/* Hover highlight circle */}
+                            <circle 
+                              cx={pt.x} 
+                              cy={pt.y} 
+                              r={isHovered ? 11 : 6} 
+                              fill="#4F46E5" 
+                              fillOpacity={isHovered ? 0.2 : 0.0} 
+                              className="cursor-pointer"
+                            />
+                            {/* Main core circle */}
+                            <circle 
+                              cx={pt.x} 
+                              cy={pt.y} 
+                              r={isHovered ? 6 : 4} 
+                              fill={isHovered ? '#FFFFFF' : '#4F46E5'} 
+                              stroke="#4F46E5" 
+                              strokeWidth={isHovered ? 3 : 1.5}
+                              className="cursor-pointer"
+                              onMouseEnter={() => setActiveChartHoverIdx(idx)}
+                              onMouseLeave={() => setActiveChartHoverIdx(null)}
+                            />
+                            {/* Value tooltip above active circle */}
+                            {isHovered && (
+                              <g>
+                                <rect
+                                  x={pt.x - 25}
+                                  y={pt.y - 25}
+                                  width="50"
+                                  height="18"
+                                  rx="5"
+                                  fill="#1A1A1A"
+                                />
+                                <text
+                                  x={pt.x}
+                                  y={pt.y - 13}
+                                  textAnchor="middle"
+                                  className="text-[9px] font-mono font-bold fill-white"
+                                >
+                                  {pt.data.attendanceCount} jiwa
+                                </text>
+                              </g>
+                            )}
+
+                            {/* X-axis labels */}
+                            <text
+                              x={pt.x}
+                              y={svgH - mBottom + 18}
+                              textAnchor="middle"
+                              className="text-[9.5px] font-mono fill-slate-500 font-bold"
+                            >
+                              {pt.data.date}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+                    {/* Chart Context Tooltip Box */}
+                    <div className="w-full mt-4 border-t border-[#1A1A1A]/10 pt-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                        <Activity className="h-4 w-4 text-emerald-600" />
+                        <span>Hover titik grafik untuk melihat rincian presensi</span>
+                      </div>
+                      
+                      {activeChartHoverIdx !== null ? (
+                        <div className="bg-indigo-50 border border-indigo-150 p-2.5 rounded-xl text-indigo-900 mt-2 sm:mt-0 font-medium">
+                          <strong>{visualizationData[activeChartHoverIdx].activityName}</strong>: {visualizationData[activeChartHoverIdx].attendanceCount} Jiwa Kebaktian
+                        </div>
+                      ) : (
+                        <span className="italic mt-1 sm:mt-0 text-[11px]">Rata-rata dinas absen tervalidasi stabil</span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Circular or percentage widget representation */}
-                  <div className="text-right">
-                    <div className={`text-2xl italic ${pctColor}`}>{score}%</div>
-                    <span className="text-[9px] text-[#1A1A1A]/40 block uppercase tracking-wider font-bold">Indeks</span>
+                  {/* KOTAK SARAN & SUARA JEMAAT */}
+                  <div className="pt-2">
+                    <h5 className="font-bold text-[#1A1A1A] font-serif italic text-sm mb-3">Kotak Suara & Saran Jemaat Lokal</h5>
+                    {localSuggestions.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic bg-[#F2F1ED]/45 p-4 rounded-2xl border border-dashed text-center">Belum ada saran/masukan dari jemaat lokal untuk gereja Anda.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {localSuggestions.map(sug => (
+                          <div key={sug.id} className="p-4 bg-amber-50/40 border border-amber-200/50 rounded-2xl space-y-1">
+                            <p className="text-xs text-slate-755 italic leading-relaxed font-serif">"{sug.message}"</p>
+                            <span className="text-[9px] text-[#1A1A1A]/40 block text-right font-mono font-bold">- Anonim Jemaat Cabang</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+
+                {/* 2. DEMOGRAPHICS & FINANCE ALLOCATION (RIGHT-COL) */}
+                <div className="lg:col-span-4 space-y-8">
+                  
+                  {/* FINANCE SEGMENT CARD */}
+                  <div className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 shadow-xs space-y-4">
+                    <div className="space-y-1 pb-2 border-b border-[#1A1A1A]/5">
+                      <span className="text-[9px] uppercase font-bold tracking-widest text-[#1A1A1A]/40 font-mono">Buku Kas Laporan</span>
+                      <h4 className="font-serif italic font-bold text-base text-[#1A1A1A]">Penyaluran Finansial Cabang</h4>
+                      <p className="text-[11px] text-slate-500">Estimasi pembagian pengeluaran operasional berkala yang diajukan oleh Bendahara Jemaat.</p>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      {expenseChartData.map((exp, idx) => {
+                        const percentOfExpense = totalExpenseAllVal > 0 
+                          ? Math.round((exp.amount / totalExpenseAllVal) * 100) 
+                          : 25;
+                        return (
+                          <div key={idx} className="space-y-1 text-xs">
+                            <div className="flex justify-between items-center text-slate-755 font-semibold">
+                              <span className="truncate max-w-[180px]">{exp.category}</span>
+                              <span className="font-mono text-[11px] text-slate-900">Rp {new Intl.NumberFormat('id-ID').format(exp.amount)}</span>
+                            </div>
+                            
+                            {/* Custom Visual Bar Progress */}
+                            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex">
+                              <div 
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ 
+                                  width: `${percentOfExpense}%`, 
+                                  backgroundColor: exp.color 
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold font-mono">
+                              <span>ALOKASI ANGGARAN</span>
+                              <span style={{ color: exp.color }}>{percentOfExpense}% KAS KELUAR</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-150 flex items-center justify-between text-xs font-sans mt-4">
+                      <span className="text-slate-500 font-bold">Total Laporan Pengeluaran:</span>
+                      <span className="font-mono font-bold text-rose-800">Rp {new Intl.NumberFormat('id-ID').format(totalExpenseAllVal)}</span>
+                    </div>
+                  </div>
+
+                  {/* DEMOGRAPHY SUMMARY BENTO */}
+                  <div className="bg-white p-6 rounded-3xl border border-[#1A1A1A]/10 shadow-xs space-y-4">
+                    <div className="space-y-1 pb-2 border-b border-[#1A1A1A]/5">
+                      <span className="text-[9px] uppercase font-bold tracking-widest text-[#1A1A1A]/40 font-mono">Segmentasi Jemaat</span>
+                      <h4 className="font-serif italic font-bold text-base text-[#1A1A1A]">Demografi Jemaat & Cabang</h4>
+                    </div>
+
+                    {/* Balance Capsule: Male vs Female */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[11.5px] font-bold text-[#1A1A1A]">
+                        <span>Pria ({maleCount} Jiwa)</span>
+                        <span>Wanita ({femaleCount} Jiwa)</span>
+                      </div>
+                      <div className="h-4 bg-[#F2F1ED] p-0.5 rounded-full flex overflow-hidden border border-[#1A1A1A]/5">
+                        <div 
+                          className="h-full bg-indigo-600 rounded-l-full text-[9px] font-extrabold text-white flex items-center justify-center transition-all duration-500" 
+                          style={{ width: `${genderPercentMale}%` }}
+                        >
+                          {genderPercentMale >= 15 && `${genderPercentMale}%`}
+                        </div>
+                        <div 
+                          className="h-full bg-pink-505 rounded-r-full text-[9px] font-extrabold text-white flex items-center justify-center transition-all duration-500" 
+                          style={{ width: `${genderPercentFemale}%` }}
+                        >
+                          {genderPercentFemale >= 15 && `${genderPercentFemale}%`}
+                        </div>
+                      </div>
+                      <div className="text-[9.5px] text-slate-400 font-bold block text-center font-mono">RASIO DISTRIBUSI GENDER JEMAAT</div>
+                    </div>
+
+                    {/* Balance Capsule: Servant vs general jemaat */}
+                    <div className="space-y-2 pt-2">
+                      <div className="flex justify-between text-[11.5px] font-bold text-[#1A1A1A]">
+                        <span>Pelayan Aktif ({committedServants.length})</span>
+                        <span>Jemaat Biasa ({generalJemaatCount})</span>
+                      </div>
+                      <div className="h-4 bg-[#F2F1ED] p-0.5 rounded-full flex overflow-hidden border border-[#1A1A1A]/5">
+                        <div 
+                          className="h-full bg-emerald-600 rounded-l-full text-[9px] font-extrabold text-white flex items-center justify-center transition-all duration-500" 
+                          style={{ width: `${servicePercent}%` }}
+                        >
+                          {servicePercent >= 15 && `${servicePercent}%`}
+                        </div>
+                        <div 
+                          className="h-full bg-[#1A1A1A] rounded-r-full text-[9px] font-extrabold text-white flex items-center justify-center transition-all duration-500" 
+                          style={{ width: `${100 - servicePercent}%` }}
+                        >
+                          {100 - servicePercent >= 15 && `${100 - servicePercent}%`}
+                        </div>
+                      </div>
+                      <div className="text-[9.5px] text-slate-400 font-bold block text-center font-mono">RASIO KETERLIBATAN DINAS LITURGIS</div>
+                    </div>
+
+                  </div>
+                  
+                </div>
+
+              </div>
+            ) : (
+              
+              /* PREVIOUS INDEX KEAKTIFAN LIST (TAB B) RENDERED MORE BEAUTIFUL */
+              <div className="bg-white p-8 rounded-3xl border border-[#1A1A1A]/10 space-y-6 shadow-xs">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-serif text-[#1A1A1A] font-bold italic">Loyalitas & Klasemen Keaktifan Jemaat</h3>
+                  <p className="text-xs text-slate-400 font-sans">Index persentase loyalitas keaktifan dihitung berdasarkan kehadiran personil dalam ibadah raya menteri sekretariat.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {approvedUsers.map(member => {
+                    const score = getMemberKeaktifanScore(member.id, member.role, member.serviceRole);
+                    let colorClass = 'bg-red-500';
+                    let textStatus = 'Pasif / Perlu Pembinaan';
+                    let pctColor = 'text-red-750 font-serif font-bold';
+                    
+                    if (score >= 85) {
+                      colorClass = 'bg-emerald-600';
+                      textStatus = 'Sangat Aktif / Roster Mimbar';
+                      pctColor = 'text-emerald-755 font-serif font-bold';
+                    } else if (score >= 70) {
+                      colorClass = 'bg-indigo-600';
+                      textStatus = 'Presensi Standard Aktif';
+                      pctColor = 'text-indigo-755 font-serif font-bold';
+                    } else if (score >= 60) {
+                      colorClass = 'bg-amber-600';
+                      textStatus = 'Cukup Giat / Terpantau';
+                      pctColor = 'text-amber-750 font-serif font-bold';
+                    }
+
+                    return (
+                      <div key={member.id} className="p-5 border border-[#1A1A1A]/10 bg-[#F2F1ED]/10 hover:bg-[#F2F1ED]/25 rounded-2xl hover:border-[#1A1A1A]/20 transition flex items-center justify-between font-sans">
+                        <div className="space-y-1 text-xs truncate max-w-[140px] md:max-w-[180px]">
+                          <div className="font-bold text-[#1A1A1A] text-sm truncate">{member.name}</div>
+                          <div className="text-slate-500 font-mono text-[9px] uppercase tracking-wider">{member.serviceRole}</div>
+                          <div className="inline-flex items-center space-x-1.5 mt-1">
+                            <span className={`h-1.5 w-1.5 rounded-full ${colorClass}`} />
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-[8.5px]">{textStatus}</span>
+                          </div>
+                        </div>
+
+                        {/* Circular or percentage widget representation */}
+                        <div className="text-right">
+                          <div className={`text-2xl italic ${pctColor}`}>{score}%</div>
+                          <span className="text-[9px] text-[#1A1A1A]/40 block uppercase tracking-wider font-extrabold">Loyalitas</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            )}
+
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* DEVOTIONAL WRITER */}
       {activeSubTab === 'devotional' && (
