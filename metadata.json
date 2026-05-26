@@ -1,0 +1,6 @@
+{
+  "name": "Meta Connect",
+  "description": "Premium multi-role church management platform connecting Central Admin, Pastors, Church Officers, and Congregants for integrated administration and spiritual growth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
