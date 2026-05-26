@@ -1,6 +1,5 @@
 import React from 'react';
 import { MetaConnectProvider, useMetaConnect } from './context/MetaConnectContext';
-import DevelopmentBar from './components/DevelopmentBar';
 import LandingPage from './components/LandingPage';
 import PusatDashboard from './components/PusatDashboard';
 import GembalaDashboard from './components/GembalaDashboard';
@@ -114,7 +113,6 @@ function DashboardRouter() {
 export default function App() {
   return (
     <MetaConnectProvider>
-      <DevelopmentBar />
       <DashboardRouter />
     </MetaConnectProvider>
   );

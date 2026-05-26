@@ -45,7 +45,7 @@ export default function LandingPage() {
     setLoginSuccess('');
 
     if (!loginEmail || !loginPass) {
-      setLoginError('Silakan isi email dan kata sandi Anda.');
+      setLoginError('Silakan isi username dan kata sandi Anda.');
       return;
     }
 
@@ -340,15 +340,15 @@ export default function LandingPage() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/60">Alamat Email</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/60">Username Anda</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                    <Mail className="h-4 w-4" />
+                    <User className="h-4 w-4" />
                   </span>
                   <input
                     id="input-login-email"
-                    type="email"
-                    placeholder="nama@email.com"
+                    type="text"
+                    placeholder="Masukkan username Anda"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 text-xs border border-[#1A1A1A]/15 rounded-lg focus:outline-none focus:border-[#1A1A1A] bg-[#F2F1ED]/50"
@@ -380,13 +380,6 @@ export default function LandingPage() {
               >
                 Masuk ke Aplikasi
               </button>
-
-              <div className="pt-4 border-t border-slate-100 mt-6 bg-[#F2F1ED]/40 p-4 rounded-xl text-[11px] space-y-1.5 text-slate-600 font-sans">
-                <div className="font-bold uppercase tracking-wider text-xs text-[#1A1A1A]/80 mb-1">Petunjuk Demo</div>
-                <div>• Pusat: <code className="bg-white px-1.5 py-0.5 border border-slate-250 rounded font-mono text-[10px]">admin@metaconnect.org</code> (pass: <code className="bg-white px-1.5 py-0.5 border border-slate-250 rounded font-mono text-[10px]">admin</code>)</div>
-                <div>• Gembala Bethel: <code className="bg-white px-1.5 py-0.5 border border-slate-250 rounded font-mono text-[10px]">budi@metaconnect.org</code> (pass: <code className="bg-white px-1.5 py-0.5 border border-slate-250 rounded font-mono text-[10px]">budi</code>)</div>
-                <div>• Bendahara Bethel: <code className="bg-white px-1.5 py-0.5 border border-slate-250 rounded font-mono text-[10px]">anton@metaconnect.org</code> (pass: <code className="bg-white px-1.5 py-0.5 border border-slate-250 rounded font-mono text-[10px]">anton</code>)</div>
-              </div>
             </form>
           )}
 

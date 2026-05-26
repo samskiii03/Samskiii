@@ -65,402 +65,32 @@ interface MetaConnectContextType {
 const MetaConnectContext = createContext<MetaConnectContextType | undefined>(undefined);
 
 // Seeds Data
-const initialChurches: Church[] = [
-  {
-    id: 'ch-1',
-    name: 'Gereja Meta Bethel',
-    address: 'Jl. Merdeka No. 12, Jakarta Pusat',
-    permitNumber: 'IG/2024/99120',
-    logoUrl: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=200',
-    pastorName: 'Pdt. Dr. Henry Budi',
-    pastorEmail: 'budi@metaconnect.org',
-    status: 'APPROVED',
-    createdAt: '2026-01-10T00:00:00Z',
-    customAccentColor: '#0f766e', // Teal 700
-    customHeroStatement: 'Membangun Tubuh Kristus yang Sehat dan Terhubung di Era Digital'
-  },
-  {
-    id: 'ch-2',
-    name: 'Gereja Meta Charis',
-    address: 'Kawasan Mandiri Blok C3, Surabaya',
-    permitNumber: 'IG/2025/11029',
-    logoUrl: 'https://images.unsplash.com/photo-1548625361-155deee211a1?auto=format&fit=crop&q=80&w=200',
-    pastorName: 'Pdt. Yohanes Santoso',
-    pastorEmail: 'yohanes@metaconnect.org',
-    status: 'APPROVED',
-    createdAt: '2026-02-15T00:00:00Z',
-    customAccentColor: '#4f46e5', // Indigo 600
-    customHeroStatement: 'Mengakar di dalam Kasih, Bertumbuh dalam Iman, Berdampak bagi Sesama'
-  },
-  {
-    id: 'ch-3',
-    name: 'GBI Solafide Jayapura',
-    address: 'Raya Sentani KM 15, Jayapura',
-    permitNumber: 'IG/2026/00432',
-    logoUrl: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&q=80&w=200',
-    pastorName: 'Pdt. Stevanus Samuel',
-    pastorEmail: 'stevanus@gmail.com',
-    status: 'PENDING_VERIFICATION',
-    createdAt: '2026-05-20T10:00:00Z',
-    customAccentColor: '#b45309', // Amber 700
-    customHeroStatement: 'Menjadi Terang Di Ujung Timur Indonesia'
-  }
-];
+const initialChurches: Church[] = [];
 
 const initialUsers: User[] = [
-  // Pusat
   {
     id: 'u-admin',
-    name: 'Admin Pusat Meta Connect',
-    email: 'admin@metaconnect.org',
-    phone: '0215551234',
-    birthDate: '1988-08-18',
-    address: 'Gedung Rektorat Meta, Lt 5 Jakarta',
+    name: 'Samskiii',
+    email: 'Samskiii',
+    phone: '08123456789',
+    birthDate: '1990-01-01',
+    address: 'Kantor Pusat Sinode',
     gender: 'Laki-laki',
     role: 'PUSAT',
     status: 'APPROVED',
     churchId: '',
     serviceRole: 'Verifikator Pusat',
-    password: 'admin'
-  },
-  // Church 1 Pastors & Officers
-  {
-    id: 'u-budi',
-    name: 'Pdt. Dr. Henry Budi',
-    email: 'budi@metaconnect.org',
-    phone: '08123456780',
-    birthDate: '1970-04-12',
-    address: 'Kompleks GMB No. 1, Jakarta',
-    gender: 'Laki-laki',
-    role: 'GEMBALA',
-    status: 'APPROVED',
-    churchId: 'ch-1',
-    serviceRole: 'Gembala Sidang',
-    password: 'budi'
-  },
-  {
-    id: 'u-anton',
-    name: 'Anton Bendahara',
-    email: 'anton@metaconnect.org',
-    phone: '08134567891',
-    birthDate: '1985-11-20',
-    address: 'Jl. Melati Baru 4, Jakarta',
-    gender: 'Laki-laki',
-    role: 'PENGURUS',
-    status: 'APPROVED',
-    churchId: 'ch-1',
-    serviceRole: 'Bendahara Jemaat',
-    officerTitle: 'Bendahara',
-    permissions: ['manage_finances'],
-    password: 'anton'
-  },
-  {
-    id: 'u-shanti',
-    name: 'Shanti Sekretaris',
-    email: 'shanti@metaconnect.org',
-    phone: '08156789234',
-    birthDate: '1990-01-14',
-    address: 'Kuningan Residence, Jakarta',
-    gender: 'Perempuan',
-    role: 'PENGURUS',
-    status: 'APPROVED',
-    churchId: 'ch-1',
-    serviceRole: 'Sekretariat Utama',
-    officerTitle: 'Sekretaris',
-    permissions: ['manage_attendance'],
-    password: 'shanti'
-  },
-  // Church 1 Jemaat & Pelayan
-  {
-    id: 'u-bambang',
-    name: 'Bambang Riyadi',
-    email: 'bambang@gmail.com',
-    phone: '08170093821',
-    birthDate: '1995-03-24',
-    address: 'Tebet Timur Dalam, Jakarta',
-    gender: 'Laki-laki',
-    role: 'JEMAAT',
-    status: 'APPROVED',
-    churchId: 'ch-1',
-    serviceRole: 'Worship Leader / Singer',
-    password: '123'
-  },
-  {
-    id: 'u-dewi',
-    name: 'Dewi Lestari',
-    email: 'dewi@gmail.com',
-    phone: '08987654321',
-    birthDate: '1998-09-02',
-    address: 'Pancoran Indah II, Jakarta',
-    gender: 'Perempuan',
-    role: 'JEMAAT',
-    status: 'APPROVED',
-    churchId: 'ch-1',
-    serviceRole: 'Singer Choir',
-    password: '123'
-  },
-  {
-    id: 'u-tony',
-    name: 'Tony Wijaya (Antrean)',
-    email: 'tony@gmail.com',
-    phone: '08119998811',
-    birthDate: '1983-05-15',
-    address: 'Jl. Menteng Tenggulun, Jakarta',
-    gender: 'Laki-laki',
-    role: 'JEMAAT',
-    status: 'PENDING_VERIFICATION',
-    churchId: 'ch-1',
-    serviceRole: 'Pemain Bass / Musik',
-    password: '123'
-  },
-  // Church 2 Pastor
-  {
-    id: 'u-yohanes',
-    name: 'Pdt. Yohanes Santoso',
-    email: 'yohanes@metaconnect.org',
-    phone: '08129993331',
-    birthDate: '1975-02-28',
-    address: 'Surabaya Permai, Surabaya',
-    gender: 'Laki-laki',
-    role: 'GEMBALA',
-    status: 'APPROVED',
-    churchId: 'ch-2',
-    serviceRole: 'Gembala Sidang',
-    password: 'yohanes'
+    password: 'simorangkir'
   }
 ];
 
-const initialAgendas: AgendaProposal[] = [
-  {
-    id: 'ag-1',
-    churchId: 'ch-1',
-    title: 'Kebaktian Kebangunan Rohani (KKR) Pemuda',
-    description: 'KKR bersama pengisi lagu pemuda nasional. Target kehadiran 150 anak muda.',
-    date: '2026-06-20',
-    division: 'Pemuda',
-    proposedBy: 'Shanti Sekretaris',
-    proposedById: 'u-shanti',
-    status: 'PENDING',
-    createdAt: '2026-05-24T08:00:00Z'
-  },
-  {
-    id: 'ag-2',
-    churchId: 'ch-1',
-    title: 'Acara Bakti Sosial Pasar Murah Jemaat',
-    description: 'Menyediakan sembako murah diskon 50% untuk warga sekitar gereja.',
-    date: '2026-06-12',
-    division: 'Misi/Sosial',
-    proposedBy: 'Shanti Sekretaris',
-    proposedById: 'u-shanti',
-    status: 'APPROVED',
-    createdAt: '2026-05-15T09:30:00Z'
-  },
-  {
-    id: 'ag-3',
-    churchId: 'ch-1',
-    title: 'Sekolah Alkitab Liburan Anak (SALA)',
-    description: 'Kelas interaktif bercerita dan permainan alkitabiah selama liburan sekolah.',
-    date: '2026-07-05',
-    division: 'Anak-anak',
-    proposedBy: 'Anton Bendahara',
-    proposedById: 'u-anton',
-    status: 'APPROVED',
-    createdAt: '2026-05-18T14:15:00Z'
-  }
-];
-
-const initialFinances: FinanceRecord[] = [
-  {
-    id: 'f-1',
-    churchId: 'ch-1',
-    type: 'INCOME',
-    category: 'Persepuluhan',
-    amount: 15500000,
-    description: 'Akumulasi persepuluhan jemaat ibadah raya Mei minggu 3',
-    date: '2026-05-18',
-    inputBy: 'Anton Bendahara',
-    status: 'APPROVED',
-    createdAt: '2026-05-18T18:00:00Z'
-  },
-  {
-    id: 'f-2',
-    churchId: 'ch-1',
-    type: 'INCOME',
-    category: 'Persembahan Kolekte',
-    amount: 4850000,
-    description: 'Kolekte Ibadah Raya 1 & 2',
-    date: '2026-05-24',
-    inputBy: 'Anton Bendahara',
-    status: 'PENDING',
-    createdAt: '2026-05-24T20:10:00Z'
-  },
-  {
-    id: 'f-3',
-    churchId: 'ch-1',
-    type: 'EXPENSE',
-    category: 'Transport Pembicara',
-    amount: 1500000,
-    description: 'Transport Pembicara Tamu Kebaktian Minggu Pdt. Andreas',
-    date: '2026-05-24',
-    inputBy: 'Anton Bendahara',
-    status: 'PENDING',
-    createdAt: '2026-05-24T20:15:00Z'
-  },
-  {
-    id: 'f-4',
-    churchId: 'ch-1',
-    type: 'EXPENSE',
-    category: 'Peralatan Multimedia',
-    amount: 6800000,
-    description: 'Pengadaan mic wireless Shure 2 unit untuk singer',
-    date: '2026-05-12',
-    inputBy: 'Anton Bendahara',
-    status: 'APPROVED',
-    createdAt: '2026-05-12T10:00:00Z'
-  },
-  {
-    id: 'f-5',
-    churchId: 'ch-1',
-    type: 'INCOME',
-    category: 'Donasi Khusus',
-    amount: 25000000,
-    description: 'Donasi hamba Tuhan anonim untuk renofasi panggung musik',
-    date: '2026-05-15',
-    inputBy: 'Anton Bendahara',
-    status: 'APPROVED',
-    createdAt: '2026-05-15T11:00:00Z'
-  }
-];
-
-const initialAttendance: AttendanceRecord[] = [
-  {
-    id: 'at-1',
-    churchId: 'ch-1',
-    activityName: 'Ibadah Raya Minggu (Mei M3)',
-    date: '2026-05-17',
-    attendanceCount: 124,
-    // true = active/berdinas, false = absen
-    servantParticipation: {
-      'u-bambang': true,
-      'u-dewi': true,
-      'u-tony': false
-    },
-    status: 'APPROVED',
-    inputBy: 'Shanti Sekretaris',
-    createdAt: '2026-05-17T13:00:00Z'
-  },
-  {
-    id: 'at-2',
-    churchId: 'ch-1',
-    activityName: 'Ibadah Raya Minggu (Mei M4)',
-    date: '2026-05-24',
-    attendanceCount: 142,
-    servantParticipation: {
-      'u-bambang': true,
-      'u-dewi': true,
-      'u-tony': true
-    },
-    status: 'PENDING',
-    inputBy: 'Shanti Sekretaris',
-    createdAt: '2026-05-24T15:30:00Z'
-  }
-];
-
-const initialDevotionals: Devotional[] = [
-  {
-    id: 'd-1',
-    churchId: 'ch-1',
-    title: 'Kekuatan di Balik Koneksi Tubuh Kristus',
-    verseRef: 'Roma 12:5',
-    verseText: '...demikian juga kita, walaupun banyak, adalah satu tubuh di dalam Kristus; tetapi kita masing-masing adalah anggota yang seorang terhadap yang lain.',
-    content: 'Tuhan mendesain gereja-Nya bukan sebagai kumpulan individu yang berjalan sendiri-sendiri, melainkan sebagai sebuah ekosistem yang terhubung lancar. Koneksi atau persekutuan bukanlah pilihan sekunder, melainkan jantung vitalitas rohani kita. Ketika satu bagian menderita, bagian lain turut merasakannya; ketika satu bertumbuh, semuanya ikut diberkati. Melalui sistem Meta Connect, kita rindu melayani satu sama lain dengan lebih transparan, responsif, dan penuh kasih.',
-    date: '2026-05-26',
-    writtenBy: 'Pdt. Dr. Henry Budi'
-  },
-  {
-    id: 'd-2',
-    churchId: 'ch-2',
-    title: 'Ketaatan Di Tengah Badai',
-    verseRef: 'Matius 8:26',
-    verseText: 'Ia berkata kepada mereka: "Mengapa kamu takut, kamu yang kurang percaya?" Lalu bangunlah Yesus menghardik angin dan danau itu, maka danau itu menjadi sangat teduh.',
-    content: 'Dalam perjalanan hidup kita, badai kerap melanda tanpa peringatan. Terkadang kita merasa gembala kita sedang tertidur atau tidak peduli. Namun ketahuilah, bahwa Yesus selalu ada dalam perahu kita. Yang Dia pinta adalah iman yang bersandar penuh. Mari andalkan firman-Nya dalam kehidupan sehari-hari.',
-    date: '2026-05-25',
-    writtenBy: 'Pdt. Yohanes Santoso'
-  }
-];
-
-const initialPrayers: PrayerRequest[] = [
-  {
-    id: 'p-1',
-    churchId: 'ch-1',
-    userId: 'u-bambang',
-    userName: 'Bambang Riyadi',
-    requestText: 'Mohon doakan bagi kesehatan ibu saya yang sedang menjalani pemulihan paska operasi ginjal di RS Tarakan.',
-    isPublic: true,
-    date: '2026-05-25T01:50:00Z',
-    aminkanList: ['u-shanti', 'u-anton', 'u-budi']
-  },
-  {
-    id: 'p-2',
-    churchId: 'ch-1',
-    userId: 'u-dewi',
-    userName: 'Dewi Lestari',
-    requestText: 'Tolong dukung dalam doa agar proses ujian akhir sertifikasi profesi saya mendapat kelancaran minggu esok.',
-    isPublic: true,
-    date: '2026-05-26T03:10:00Z',
-    aminkanList: ['u-bambang']
-  },
-  {
-    id: 'p-3',
-    churchId: 'ch-1',
-    userId: 'u-tony',
-    userName: 'Tony Wijaya',
-    requestText: 'Permohonan doa pribadi (pencarian bimbingan pekerjaan baru).',
-    isPublic: false,
-    date: '2026-05-24T12:00:00Z',
-    aminkanList: []
-  }
-];
-
-const initialSuggestions: Suggestion[] = [
-  {
-    id: 's-1',
-    churchId: 'ch-1',
-    userName: 'Bambang Riyadi',
-    message: 'Apakah mungkin ruang ibadah pemuda AC-nya bisa diservis demi kenyamanan saat latihan musik?',
-    date: '2026-05-24T10:00:00Z',
-    target: 'LOCAL'
-  },
-  {
-    id: 's-2',
-    churchId: 'ch-1',
-    userName: 'Pdt. Dr. Henry Budi',
-    message: 'Kami menyarankan agar di Pusat ditambahkan dashboard ekspor keuangan bulanan ke format spreadsheet.',
-    date: '2026-05-25T11:00:00Z',
-    target: 'PUSAT'
-  }
-];
-
-const initialNotifications: AppNotification[] = [
-  {
-    id: 'n-1',
-    from: 'PUSAT',
-    toChurchId: 'GLOBAL',
-    type: 'INFO',
-    title: 'Peluncuran Fitur Verifikasi Multi-Role',
-    message: 'Sistem Meta Connect kini mendukung alur verifikasi jemaat oleh Gembala Lokal dan verifikasi gereja oleh Pusat.',
-    date: '2026-05-01T08:00:00Z'
-  },
-  {
-    id: 'n-2',
-    from: 'PUSAT',
-    toChurchId: 'ch-1',
-    type: 'ALERT',
-    title: 'Pemberitahuan Kelengkapan Dokumen',
-    message: 'Terima kasih Pdt. Dr. Henry Budi, status verifikasi Gereja Meta Bethel di tingkat pusat telah verified sepenuhnya.',
-    date: '2026-05-11T12:00:00Z'
-  }
-];
+const initialAgendas: AgendaProposal[] = [];
+const initialFinances: FinanceRecord[] = [];
+const initialAttendance: AttendanceRecord[] = [];
+const initialDevotionals: Devotional[] = [];
+const initialPrayers: PrayerRequest[] = [];
+const initialSuggestions: Suggestion[] = [];
+const initialNotifications: AppNotification[] = [];
 
 const initialGlobalSettings: GlobalSettings = {
   title: 'Menghubungkan Pelayanan dengan Satu Ketukan Melalui Meta Connect',
@@ -475,6 +105,21 @@ const initialGlobalSettings: GlobalSettings = {
 };
 
 export const MetaConnectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Overwrite older storage versions to force-remove existing template accounts
+  if (typeof window !== 'undefined' && localStorage.getItem('mc_cleaned_v3') !== 'true') {
+    localStorage.removeItem('mc_churches');
+    localStorage.removeItem('mc_users');
+    localStorage.removeItem('mc_agendas');
+    localStorage.removeItem('mc_finances');
+    localStorage.removeItem('mc_attendance');
+    localStorage.removeItem('mc_devotionals');
+    localStorage.removeItem('mc_prayers');
+    localStorage.removeItem('mc_suggestions');
+    localStorage.removeItem('mc_notifications');
+    localStorage.removeItem('mc_current_user');
+    localStorage.setItem('mc_cleaned_v3', 'true');
+  }
+
   const [churches, setChurches] = useState<Church[]>(() => {
     const saved = localStorage.getItem('mc_churches');
     return saved ? JSON.parse(saved) : initialChurches;
@@ -587,11 +232,14 @@ export const MetaConnectProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Auth Operations
   const login = (email: string, passwordHash: string) => {
     setLoading(true);
-    const u = users.find(x => x.email.toLowerCase() === email.toLowerCase());
+    const u = users.find(x => 
+      x.email.toLowerCase() === email.toLowerCase() || 
+      x.name.toLowerCase() === email.toLowerCase()
+    );
     setLoading(false);
     
     if (!u) {
-      return { success: false, message: 'Email tidak terdaftar.' };
+      return { success: false, message: 'Email atau Username tidak terdaftar.' };
     }
 
     if (u.password && u.password !== passwordHash) {
