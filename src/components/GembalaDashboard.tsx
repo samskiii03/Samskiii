@@ -22,10 +22,15 @@ export default function GembalaDashboard() {
     addOfficer,
     removeOfficerAccess,
     addLocalDevotional,
-    actionLogs
+    actionLogs,
+    deleteUser,
+    restoreUser
   } = useMetaConnect();
 
-  const [activeSubTab, setActiveSubTab] = useState<'approvals' | 'activity' | 'devotional' | 'staff'>('approvals');
+  const [activeSubTab, setActiveSubTab] = useState<'approvals' | 'activity' | 'devotional' | 'staff' | 'members'>('approvals');
+  const [localMemberFilter, setLocalMemberFilter] = useState<'ALL' | 'APPROVED' | 'PENDING_VERIFICATION' | 'REJECTED'>('ALL');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [localJustificationReason, setLocalJustificationReason] = useState('Resolusi pemulihan & aktivasi kembali status jemaat oleh Gembala Sidang');
 
   // Interactive metric model panel states
   const [clickedMetric, setClickedMetric] = useState<'KAS' | 'ANGGOTA' | 'PELAYAN' | 'TINDAKAN' | null>(null);
@@ -202,12 +207,12 @@ export default function GembalaDashboard() {
           </div>
         </div>
 
-        <div className="flex bg-[#F2F1ED] rounded-full p-1 border border-[#1A1A1A]/10 max-w-lg w-full">
-          {(['approvals', 'activity', 'devotional', 'staff'] as const).map(tab => (
+        <div className="flex bg-[#F2F1ED] rounded-full p-1 border border-[#1A1A1A]/10 max-w-2xl w-full flex-wrap">
+          {(['approvals', 'activity', 'devotional', 'staff', 'members'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`flex-1 text-[10px] font-bold rounded-full py-2.5 transition uppercase tracking-widest cursor-pointer ${
+              className={`flex-1 text-[9.5px] font-bold rounded-full py-2.5 transition uppercase tracking-wider cursor-pointer min-w-[70px] ${
                 activeSubTab === tab 
                   ? 'bg-[#1A1A1A] text-white shadow-xs' 
                   : 'text-[#1A1A1A]/50 hover:text-[#1A1A1A]'
@@ -217,6 +222,7 @@ export default function GembalaDashboard() {
               {tab === 'activity' && 'Keaktifan'}
               {tab === 'devotional' && 'Tulis Firman'}
               {tab === 'staff' && 'Wewenang Staff'}
+              {tab === 'members' && 'Administrasi Jemaat'}
             </button>
           ))}
         </div>
@@ -919,6 +925,273 @@ export default function GembalaDashboard() {
           </div>
         </div>
       )}
+
+      {/* MEMBERS DIRECTORY MANAGEMENT SUBTAB */}
+      {activeSubTab === 'members' && (() => {
+        const localChurchUsers = users.filter(u => u.churchId === activeChurch.id && u.role !== 'PUSAT');
+        const filteredLocalUsers = localChurchUsers.filter(u => {
+          if (localMemberFilter !== 'ALL' && u.status !== localMemberFilter) return false;
+          if (localSearchQuery.trim()) {
+            const q = localSearchQuery.toLowerCase();
+            return (
+              u.name.toLowerCase().includes(q) ||
+              u.email.toLowerCase().includes(q) ||
+              (u.serviceRole && u.serviceRole.toLowerCase().includes(q)) ||
+              u.role.toLowerCase().includes(q)
+            );
+          }
+          return true;
+        });
+
+        return (
+          <div id="gembala-members-tab" className="bg-white p-8 rounded-3xl border border-[#1A1A1A]/10 shadow-xs space-y-6">
+            <div className="space-y-1">
+              <h3 className="text-2xl font-serif text-[#1A1A1A] flex items-center gap-1.5 font-bold italic">
+                <Users className="h-5 w-5 text-indigo-800" />
+                Manajemen Administrasi Anggota Jemaat & Pelayan Komitmen
+              </h3>
+              <p className="text-xs text-slate-500 font-sans">
+                Portal gembala sidang untuk mengaudit semua status keanggotaan jemaat di cabang {activeChurch.name}. Anda dapat meninjau akun yang ditolak, melakukan pemulihan/re-aktivasi kembali, serta menghapus akun secara permanen.
+              </p>
+            </div>
+
+            {/* Local Search and Filtration Controls */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#F2F1ED]/40 p-5 rounded-2xl border border-[#1A1A1A]/10 font-sans text-xs">
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  id="btn-local-filter-all"
+                  type="button"
+                  onClick={() => setLocalMemberFilter('ALL')}
+                  className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                    localMemberFilter === 'ALL'
+                      ? 'bg-[#1A1A1A] text-white shadow-xs'
+                      : 'bg-[#E8E6E1]/70 text-[#1A1A1A]/70 hover:bg-[#E8E6E1]'
+                  }`}
+                >
+                  Semua ({localChurchUsers.length})
+                </button>
+                <button
+                  id="btn-local-filter-approved"
+                  type="button"
+                  onClick={() => setLocalMemberFilter('APPROVED')}
+                  className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                    localMemberFilter === 'APPROVED'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-[#E8E6E1]/70 text-[#1A1A1A]/70 hover:bg-[#E8E6E1]'
+                  }`}
+                >
+                  Disetujui/Aktif ({localChurchUsers.filter(u => u.status === 'APPROVED').length})
+                </button>
+                <button
+                  id="btn-local-filter-pending"
+                  type="button"
+                  onClick={() => setLocalMemberFilter('PENDING_VERIFICATION')}
+                  className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                    localMemberFilter === 'PENDING_VERIFICATION'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-[#E8E6E1]/70 text-[#1A1A1A]/70 hover:bg-[#E8E6E1]'
+                  }`}
+                >
+                  Menunggu ({localChurchUsers.filter(u => u.status === 'PENDING_VERIFICATION').length})
+                </button>
+                <button
+                  id="btn-local-filter-rejected"
+                  type="button"
+                  onClick={() => setLocalMemberFilter('REJECTED')}
+                  className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                    localMemberFilter === 'REJECTED'
+                      ? 'bg-red-700 text-white shadow-xs'
+                      : 'bg-[#E8E6E1]/70 text-[#1A1A1A]/70 hover:bg-[#E8E6E1]'
+                  }`}
+                >
+                  Ditolak ({localChurchUsers.filter(u => u.status === 'REJECTED').length})
+                </button>
+              </div>
+
+              <div className="w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="Cari nama atau pelayanan jemaat..."
+                  value={localSearchQuery}
+                  onChange={(e) => setLocalSearchQuery(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-[#1A1A1A]/10 bg-white rounded-xl focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Justification Box */}
+            <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs font-sans">
+              <div className="space-y-0.5">
+                <span className="font-bold text-amber-800 flex items-center gap-1.5 font-serif italic text-sm">
+                  <Key className="h-4 w-4 text-amber-600" />
+                  Alasan Pemulihan Sidang Jemaat
+                </span>
+                <p className="text-slate-500 text-[11px]">Masukkan keterangan pemulihan status jemaat di bawah untuk disimpan dalam histori audit log.</p>
+              </div>
+              <input
+                type="text"
+                value={localJustificationReason}
+                onChange={(e) => setLocalJustificationReason(e.target.value)}
+                placeholder="Alasan pemulihan kembali oleh Gembala..."
+                className="w-full md:w-1/2 text-xs px-3 py-2 border border-[#1A1A1A]/15 bg-white rounded-xl focus:outline-none"
+              />
+            </div>
+
+            {/* Members List Table (Desktop) */}
+            <div className="hidden md:block overflow-x-auto font-sans">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#1A1A1A]/10 text-slate-400 font-bold uppercase tracking-wider text-[9px] bg-slate-50">
+                    <th className="py-3 px-2">Nama Lengkap</th>
+                    <th className="py-3 px-2">Kategori Keanggotaan</th>
+                    <th className="py-3 px-2">Jenis Kelamin</th>
+                    <th className="py-3 px-2">Penugasan Liturgis / Pelayanan</th>
+                    <th className="py-3 px-2">Status Verifikasi</th>
+                    <th className="py-3 px-2 text-right">Opsi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1A1A1A]/5">
+                  {filteredLocalUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-slate-400 italic">
+                        Tidak ditemukan jemaat lokal dengan filter ini.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLocalUsers.map(u => (
+                      <tr key={u.id} className="hover:bg-slate-50/50">
+                        <td className="py-3 px-2 font-bold text-slate-900">
+                          <div>{u.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono font-normal">{u.email} | {u.phone}</div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className="font-semibold text-slate-750 block">{u.role}</span>
+                          <span className="text-[10px] text-slate-450">{u.officerTitle || 'Jemaat Biasa'}</span>
+                        </td>
+                        <td className="py-3 px-2 text-slate-500">{u.gender || '-'}</td>
+                        <td className="py-3 px-2 font-medium text-indigo-700">{u.serviceRole || '-'}</td>
+                        <td className="py-3 px-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                            u.status === 'APPROVED' 
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-150' 
+                              : u.status === 'REJECTED' 
+                                ? 'bg-red-50 text-red-800 border border-red-150' 
+                                : 'bg-amber-50 text-amber-805 border border-amber-150'
+                          }`}>
+                            {u.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {u.status === 'REJECTED' && (
+                              <button
+                                id={`btn-restore-user-gembala-${u.id}`}
+                                onClick={() => restoreUser(u.id, localJustificationReason)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[9px] uppercase tracking-wider cursor-pointer shadow-xs transition"
+                                title="Pulihkan & Terima Jemaat"
+                              >
+                                Pulihkan
+                              </button>
+                            )}
+                            {u.status === 'PENDING_VERIFICATION' && (
+                              <button
+                                id={`btn-approve-user-gembala-${u.id}`}
+                                onClick={() => restoreUser(u.id, 'Disetujui langsung oleh Gembala Sidang Lokal')}
+                                className="px-2.5 py-1 bg-indigo-600 hover:bg-[#1C3FAA] text-white rounded font-bold text-[9px] uppercase tracking-wider cursor-pointer shadow-xs transition"
+                                title="Sahkan sebagai Anggota Jemaat"
+                              >
+                                Sahkan
+                              </button>
+                            )}
+                            <button
+                              id={`btn-delete-user-gembala-${u.id}`}
+                              onClick={() => {
+                                if (window.confirm(`Hapus permanen akun jemaat ${u.name}? Tindakan ini permanen.`)) {
+                                  deleteUser(u.id);
+                                }
+                              }}
+                              className="px-2 py-1 bg-red-50 text-red-650 hover:bg-red-100 rounded text-[9px] font-bold cursor-pointer transition"
+                              title="Hapus Jemaat"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Members List (Mobile View) */}
+            <div className="block md:hidden space-y-4 font-sans text-xs">
+              {filteredLocalUsers.length === 0 ? (
+                <p className="py-4 text-center text-slate-400 italic">Belum ada data jemaat yang sesuai.</p>
+              ) : (
+                filteredLocalUsers.map(u => (
+                  <div key={u.id} className="p-4 bg-slate-50 rounded-2xl border border-[#1A1A1A]/10 space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <h4 className="font-bold text-slate-900">{u.name}</h4>
+                        <span className="text-[10px] text-slate-450 block font-mono">{u.email}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        u.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800' : u.status === 'REJECTED' ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-805'
+                      }`}>
+                        {u.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10.5px] border-t border-[#1A1A1A]/5 pt-2">
+                      <div>
+                        <span className="text-[8.5px] uppercase tracking-wider text-slate-400 block">Kategori</span>
+                        <span className="font-bold text-slate-700">{u.role}</span>
+                      </div>
+                      <div>
+                        <span className="text-[8.5px] uppercase tracking-wider text-slate-400 block">Pelayanan</span>
+                        <span className="font-medium text-slate-700">{u.serviceRole || '-'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-1.5 pt-2.5 border-t border-[#1A1A1A]/5">
+                      {u.status === 'REJECTED' && (
+                        <button
+                          id={`btn-mob-restore-gembala-${u.id}`}
+                          onClick={() => restoreUser(u.id, localJustificationReason)}
+                          className="px-3 py-1 bg-emerald-600 text-white rounded font-bold uppercase text-[9px] cursor-pointer"
+                        >
+                          Pulihkan
+                        </button>
+                      )}
+                      {u.status === 'PENDING_VERIFICATION' && (
+                        <button
+                          id={`btn-mob-approve-gembala-${u.id}`}
+                          onClick={() => restoreUser(u.id, 'Disetujui langsung oleh Gembala Sidang Lokal')}
+                          className="px-3 py-1 bg-indigo-600 text-white rounded font-bold uppercase text-[9px] cursor-pointer"
+                        >
+                          Sahkan
+                        </button>
+                      )}
+                      <button
+                        id={`btn-mob-delete-gembala-${u.id}`}
+                        onClick={() => {
+                          if (window.confirm(`Hapus permanen ${u.name}?`)) {
+                            deleteUser(u.id);
+                          }
+                        }}
+                        className="px-3 py-1 bg-red-50 text-red-600 rounded font-bold text-[9px] cursor-pointer"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* METRIC DETAILS DROPDOWN/MODAL */}
       {clickedMetric && (

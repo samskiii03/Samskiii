@@ -52,6 +52,12 @@ interface MetaConnectContextType {
   removeOfficerAccess: (userId: string) => void;
   addLocalDevotional: (title: string, verseRef: string, verseText: string, content: string) => void;
   
+  // Global Account Deletion and Recovery
+  deleteUser: (userId: string) => void;
+  restoreUser: (userId: string, reason?: string) => void;
+  deleteChurch: (churchId: string) => void;
+  restoreChurch: (churchId: string, reason?: string) => void;
+  
   // Officer & Jemaat Actions
   proposeAgenda: (title: string, description: string, date: string, division: string) => void;
   addFinance: (type: 'INCOME' | 'EXPENSE', category: FinanceRecord['category'], amount: number, description: string, date: string) => void;
@@ -375,19 +381,21 @@ const initialGlobalSettings: GlobalSettings = {
 };
 
 export const MetaConnectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Overwrite older storage versions to force-remove existing template accounts
+  // Safe storage initial check - do NOT remove data if any previous church or user accounts are stored
   if (typeof window !== 'undefined' && localStorage.getItem('mc_cleaned_v4') !== 'true') {
-    localStorage.removeItem('mc_churches');
-    localStorage.removeItem('mc_users');
-    localStorage.removeItem('mc_agendas');
-    localStorage.removeItem('mc_finances');
-    localStorage.removeItem('mc_attendance');
-    localStorage.removeItem('mc_devotionals');
-    localStorage.removeItem('mc_prayers');
-    localStorage.removeItem('mc_suggestions');
-    localStorage.removeItem('mc_notifications');
-    localStorage.removeItem('mc_current_user');
-    localStorage.removeItem('mc_action_logs');
+    if (!localStorage.getItem('mc_churches') && !localStorage.getItem('mc_users')) {
+      localStorage.removeItem('mc_churches');
+      localStorage.removeItem('mc_users');
+      localStorage.removeItem('mc_agendas');
+      localStorage.removeItem('mc_finances');
+      localStorage.removeItem('mc_attendance');
+      localStorage.removeItem('mc_devotionals');
+      localStorage.removeItem('mc_prayers');
+      localStorage.removeItem('mc_suggestions');
+      localStorage.removeItem('mc_notifications');
+      localStorage.removeItem('mc_current_user');
+      localStorage.removeItem('mc_action_logs');
+    }
     localStorage.setItem('mc_cleaned_v4', 'true');
   }
 
@@ -914,6 +922,41 @@ export const MetaConnectProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSuggestions(prev => [...prev, sugg]);
   };
 
+  const deleteUser = (userId: string) => {
+    const targetUser = users.find(u => u.id === userId);
+    if (targetUser) {
+      addLog('HAPUS_AKUN', targetUser.name, 'REJECTED', `Menghapus akun atas nama ${targetUser.name} dengan peran ${targetUser.role}`);
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      if (currentUser && currentUser.id === userId) {
+        setCurrentUser(null);
+      }
+    }
+  };
+
+  const restoreUser = (userId: string, reason = 'Pemulihan dan aktivasi kembali jemaat/pengurus') => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'APPROVED' } : u));
+    const targetUser = users.find(u => u.id === userId);
+    if (targetUser) {
+      addLog('PEMULIHAN_AKUN', targetUser.name, 'APPROVED', reason);
+    }
+  };
+
+  const deleteChurch = (churchId: string) => {
+    const targetCh = churches.find(ch => ch.id === churchId);
+    if (targetCh) {
+      addLog('HAPUS_GEREJA', targetCh.name, 'REJECTED', `Menghapus pendaftaran gereja lokal ${targetCh.name}`);
+      setChurches(prev => prev.filter(ch => ch.id !== churchId));
+    }
+  };
+
+  const restoreChurch = (churchId: string, reason = 'Pemulihan status legalitas gereja lokal') => {
+    setChurches(prev => prev.map(ch => ch.id === churchId ? { ...ch, status: 'APPROVED' } : ch));
+    const targetCh = churches.find(ch => ch.id === churchId);
+    if (targetCh) {
+      addLog('PEMULIHAN_GEREJA', targetCh.name, 'APPROVED', reason);
+    }
+  };
+
   // Fast Dev Switcher simulation helper
   const setCurrentUserDirectly = (role: 'PUSAT' | 'GEMBALA' | 'PENGURUS' | 'JEMAAT', churchId = 'ch-1', officerType: 'Sekretaris' | 'Bendahara' = 'Sekretaris') => {
     if (role === 'PUSAT') {
@@ -974,6 +1017,11 @@ export const MetaConnectProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addOfficer,
       removeOfficerAccess,
       addLocalDevotional,
+      
+      deleteUser,
+      restoreUser,
+      deleteChurch,
+      restoreChurch,
       
       proposeAgenda,
       addFinance,

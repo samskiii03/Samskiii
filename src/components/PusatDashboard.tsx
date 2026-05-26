@@ -19,7 +19,11 @@ export default function PusatDashboard() {
     sendNotification,
     globalSettings,
     currentUser,
-    actionLogs
+    actionLogs,
+    deleteUser,
+    restoreUser,
+    deleteChurch,
+    restoreChurch
   } = useMetaConnect();
 
   // Tab View state
@@ -60,6 +64,11 @@ export default function PusatDashboard() {
   const [adminAddress, setAdminAddress] = useState(currentUser?.address || '');
   const [adminPass, setAdminPass] = useState(currentUser?.password || '');
   const [adminFeedback, setAdminFeedback] = useState('');
+
+  // Filtering states for Members Directory
+  const [memberStatusFilter, setMemberStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING_VERIFICATION' | 'REJECTED'>('ALL');
+  const [searchMemberQuery, setSearchMemberQuery] = useState('');
+  const [memberJustificationReason, setMemberJustificationReason] = useState('Konfirmasi ulang kelengkapan administrasi dan keanggotaan sah jemaat');
 
   // Notification Builder state
   const [notifTarget, setNotifTarget] = useState('GLOBAL');
@@ -556,102 +565,284 @@ export default function PusatDashboard() {
 
             </div>
           )}
+                    {/* TAB 2: Global Anggota Aktif Directory */}
+          {activeView === 'members' && (() => {
+            const filteredUsers = users.filter(u => {
+              if (u.role === 'PUSAT') return false;
+              if (memberStatusFilter !== 'ALL' && u.status !== memberStatusFilter) return false;
+              if (searchMemberQuery.trim()) {
+                const q = searchMemberQuery.toLowerCase();
+                const church = churches.find(c => c.id === u.churchId);
+                return (
+                  u.name.toLowerCase().includes(q) ||
+                  u.email.toLowerCase().includes(q) ||
+                  (u.serviceRole && u.serviceRole.toLowerCase().includes(q)) ||
+                  (church && church.name.toLowerCase().includes(q))
+                );
+              }
+              return true;
+            });
 
-          {/* TAB 2: Global Anggota Aktif Directory */}
-          {activeView === 'members' && (
-            <div className="bg-white rounded-3xl shadow-xs border border-[#1A1A1A]/10 overflow-hidden space-y-6">
-              <div className="border-b border-[#1A1A1A]/10 px-6 py-5 bg-[#F2F1ED]/20">
-                <h3 className="font-serif italic font-bold text-lg text-[#1A1A1A] flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Kependudukan Jemaat Aktif Nasional ({totalApprovedMembers} Jiwa)
-                </h3>
-                <p className="text-xs text-slate-500">Tabel pusat audit data seluruh jemaat, pengurus, maupun pelayan yang telah disetujui oleh masing-masing gembala lokal.</p>
-              </div>
+            return (
+              <div id="members-directory-root" className="bg-white rounded-3xl shadow-xs border border-[#1A1A1A]/10 overflow-hidden space-y-6">
+                <div className="border-b border-[#1A1A1A]/10 px-6 py-5 bg-[#F2F1ED]/20">
+                  <h3 className="font-serif italic font-bold text-lg text-[#1A1A1A] flex items-center gap-2">
+                    <Users className="h-5 w-5 text-indigo-800" />
+                    Kependudukan Jemaat & Peninjauan Akun ({users.filter(u => u.role !== 'PUSAT').length} Registrasi)
+                  </h3>
+                  <p className="text-xs text-slate-500">Tabel pusat audit terpadu atas anggota jemaat, pengurus, serta pelayan jemaat nasional untuk peninjauan, penghapusan, dan pemulihan akun.</p>
+                </div>
 
-              {/* Desktop Table (Visible on medium screens and larger) */}
-              <div className="hidden md:block px-6 pb-6 overflow-x-auto">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#1A1A1A]/10 text-slate-400 font-bold uppercase tracking-wider text-[9px] bg-slate-50">
-                      <th className="py-3 px-2">Nama Lengkap</th>
-                      <th className="py-3 px-2">Posisi / Role</th>
-                      <th className="py-3 px-2">Gereja Lokal</th>
-                      <th className="py-3 px-2">Jenis Kelamin</th>
-                      <th className="py-3 px-2">Status Akun</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1A1A1A]/5">
-                    {users.map(u => {
+                <div className="px-6 space-y-4">
+                  {/* Search and Filters */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-150">
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        id="btn-filter-status-all"
+                        type="button"
+                        onClick={() => setMemberStatusFilter('ALL')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          memberStatusFilter === 'ALL'
+                            ? 'bg-[#1A1A1A] text-[#F9F8F6]'
+                            : 'bg-[#F2F1ED] text-slate-600 hover:bg-[#E8E6E1]'
+                        }`}
+                      >
+                        Semua ({users.filter(u => u.role !== 'PUSAT').length})
+                      </button>
+                      <button
+                        id="btn-filter-status-approved"
+                        type="button"
+                        onClick={() => setMemberStatusFilter('APPROVED')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          memberStatusFilter === 'APPROVED'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-[#F2F1ED] text-slate-600 hover:bg-[#E8E6E1]'
+                        }`}
+                      >
+                        Sah/Aktif ({users.filter(u => u.status === 'APPROVED' && u.role !== 'PUSAT').length})
+                      </button>
+                      <button
+                        id="btn-filter-status-pending"
+                        type="button"
+                        onClick={() => setMemberStatusFilter('PENDING_VERIFICATION')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          memberStatusFilter === 'PENDING_VERIFICATION'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-[#F2F1ED] text-slate-600 hover:bg-[#E8E6E1]'
+                        }`}
+                      >
+                        Tertunda ({users.filter(u => u.status === 'PENDING_VERIFICATION' && u.role !== 'PUSAT').length})
+                      </button>
+                      <button
+                        id="btn-filter-status-rejected"
+                        type="button"
+                        onClick={() => setMemberStatusFilter('REJECTED')}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                          memberStatusFilter === 'REJECTED'
+                            ? 'bg-red-700 text-white'
+                            : 'bg-[#F2F1ED] text-slate-600 hover:bg-[#E8E6E1]'
+                        }`}
+                      >
+                        Ditolak/Review ({users.filter(u => u.status === 'REJECTED' && u.role !== 'PUSAT').length})
+                      </button>
+                    </div>
+
+                    <div className="w-full md:w-64">
+                      <input
+                        type="text"
+                        placeholder="Cari nama, email, gereja..."
+                        value={searchMemberQuery}
+                        onChange={(e) => setSearchMemberQuery(e.target.value)}
+                        className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Justification Field */}
+                  <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs font-sans">
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-amber-850 flex items-center gap-1.5 font-serif italic text-sm">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        Justifikasi Pemulihan / Aktivasi Pusat
+                      </span>
+                      <p className="text-slate-500 text-[11px]">Masukkan alasan tertulis Anda di bawah. Catatan ini akan dicatat ke audit log keamanan nasional saat Anda menyetujui ulang akun.</p>
+                    </div>
+                    <input
+                      type="text"
+                      value={memberJustificationReason}
+                      onChange={(e) => setMemberJustificationReason(e.target.value)}
+                      placeholder="Masukkan alasan pemulihan akun disini..."
+                      className="w-full md:w-1/2 text-xs px-3 py-2 border border-slate-200 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block px-6 pb-6 overflow-x-auto font-sans">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#1A1A1A]/10 text-slate-400 font-bold uppercase tracking-wider text-[9px] bg-slate-50">
+                        <th className="py-3 px-2">Nama Lengkap</th>
+                        <th className="py-3 px-2">Posisi / Role</th>
+                        <th className="py-3 px-2">Gereja Lokal</th>
+                        <th className="py-3 px-2">Jenis Kelamin</th>
+                        <th className="py-3 px-2">Status Akun</th>
+                        <th className="py-3 px-2 text-right">Opsi Tindakan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1A1A1A]/5">
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-10 text-center text-slate-400 italic">
+                            Tidak ditemukan data registrasi akun untuk status filter ini.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map(u => {
+                          const church = churches.find(c => c.id === u.churchId);
+                          return (
+                            <tr key={u.id} className="hover:bg-slate-50/70">
+                              <td className="py-3 px-2 font-bold text-slate-900 font-sans">
+                                <div>{u.name}</div>
+                                <div className="text-[10px] text-slate-400 font-mono font-normal">{u.email}</div>
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className="font-semibold text-slate-600 block">{u.role}</span>
+                                <span className="text-[10px] text-slate-450">{u.serviceRole || u.officerTitle || '-'}</span>
+                              </td>
+                              <td className="py-3 px-2 font-medium text-slate-700">{church?.name || 'Belum Terkoneksi'}</td>
+                              <td className="py-3 px-2 text-slate-500">{u.gender}</td>
+                              <td className="py-3 px-2">
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                  u.status === 'APPROVED' 
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-150' 
+                                    : u.status === 'REJECTED' 
+                                      ? 'bg-red-50 text-red-800 border border-red-150' 
+                                      : 'bg-amber-50 text-amber-805 border border-amber-150'
+                                }`}>
+                                  {u.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-2 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {u.status === 'REJECTED' && (
+                                    <button
+                                      id={`btn-restore-user-pusat-${u.id}`}
+                                      onClick={() => restoreUser(u.id, memberJustificationReason)}
+                                      className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] uppercase font-bold tracking-wider cursor-pointer font-sans shadow-xs transition"
+                                      title="Pulihkan & Sahkan Akun"
+                                    >
+                                      Pulihkan
+                                    </button>
+                                  )}
+                                  {u.status === 'PENDING_VERIFICATION' && (
+                                    <button
+                                      id={`btn-approve-user-pusat-${u.id}`}
+                                      onClick={() => restoreUser(u.id, 'Disetujui langsung oleh Pusat Sinode')}
+                                      className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] uppercase font-bold tracking-wider cursor-pointer font-sans shadow-xs transition"
+                                      title="Konfirmasi & Sahkan"
+                                    >
+                                      Sahkan
+                                    </button>
+                                  )}
+                                  <button
+                                    id={`btn-delete-user-pusat-${u.id}`}
+                                    onClick={() => {
+                                      if (window.confirm(`Hapus permanen akun ${u.name}? Akun tidak akan dapat dikembalikan lagi.`)) {
+                                        deleteUser(u.id);
+                                      }
+                                    }}
+                                    className="px-2 py-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded text-[10px] font-bold cursor-pointer font-sans transition"
+                                    title="Hapus Akun Selamanya"
+                                  >
+                                    Hapus
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card List */}
+                <div className="block md:hidden px-4 pb-6 space-y-4 font-sans">
+                  {filteredUsers.length === 0 ? (
+                    <p className="py-4 text-center text-xs text-[#1A1A1A]/50 italic">Belum ada registrasi untuk status ini.</p>
+                  ) : (
+                    filteredUsers.map(u => {
                       const church = churches.find(c => c.id === u.churchId);
                       return (
-                        <tr key={u.id} className="hover:bg-slate-50">
-                          <td className="py-3 px-2 font-bold text-slate-900">
-                            <div>{u.name}</div>
-                            <div className="text-[10px] text-slate-400 font-mono font-normal">{u.email}</div>
-                          </td>
-                          <td className="py-3 px-2">
-                            <span className="font-semibold text-slate-600 block">{u.role}</span>
-                            <span className="text-[10px] text-slate-400">{u.serviceRole || u.officerTitle || '-'}</span>
-                          </td>
-                          <td className="py-3 px-2 font-medium text-slate-700">{church?.name || 'Belum Terkoneksi'}</td>
-                          <td className="py-3 px-2 text-slate-500">{u.gender}</td>
-                          <td className="py-3 px-2">
+                        <div key={u.id} className="p-4 bg-[#F2F1ED]/35 rounded-2xl border border-[#1A1A1A]/5 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="font-bold text-slate-950 text-sm">{u.name}</h4>
+                              <span className="text-[10px] text-slate-500 font-mono block break-all">{u.email}</span>
+                            </div>
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                              u.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-805'
+                              u.status === 'APPROVED' 
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-150' 
+                                : u.status === 'REJECTED' 
+                                  ? 'bg-red-50 text-red-800 border border-red-150' 
+                                  : 'bg-amber-50 text-amber-805 border border-amber-100'
                             }`}>
                               {u.status}
                             </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-[#1A1A1A]/5">
+                            <div>
+                              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans block">Role / Posisi</span>
+                              <span className="font-semibold text-slate-750 block">{u.role}</span>
+                              <span className="text-[9.5px] text-slate-550">{u.serviceRole || u.officerTitle || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans block">Gereja Lokal</span>
+                              <span className="font-semibold text-slate-750 block truncate">{church?.name || 'Belum Terkoneksi'}</span>
+                            </div>
+                          </div>
 
-              {/* Mobile Card List (Visible only on mobile devices) */}
-              <div className="block md:hidden px-4 pb-6 space-y-4">
-                {users.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-[#1A1A1A]/50">Belum ada data anggota.</p>
-                ) : (
-                  users.map(u => {
-                    const church = churches.find(c => c.id === u.churchId);
-                    return (
-                      <div key={u.id} className="p-4 bg-[#F2F1ED]/35 rounded-2xl border border-[#1A1A1A]/5 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-bold text-slate-950 text-sm">{u.name}</h4>
-                            <span className="text-[10px] text-slate-500 font-mono block break-all">{u.email}</span>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                            u.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-150' : 'bg-amber-50 text-amber-805 border border-amber-150'
-                          }`}>
-                            {u.status}
-                          </span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-[#1A1A1A]/5">
-                          <div>
-                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans block">Role / Posisi</span>
-                            <span className="font-semibold text-slate-750 block">{u.role}</span>
-                            <span className="text-[9.5px] text-slate-500">{u.serviceRole || u.officerTitle || '-'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans block">Gereja Lokal</span>
-                            <span className="font-semibold text-slate-750 block truncate">{church?.name || 'Belum Terkoneksi'}</span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans block">Gender</span>
-                            <span className="text-slate-700">{u.gender || '-'}</span>
+                          <div className="flex justify-end gap-1.5 pt-3 border-t border-[#1A1A1A]/5">
+                            {u.status === 'REJECTED' && (
+                              <button
+                                id={`btn-mob-restore-${u.id}`}
+                                onClick={() => restoreUser(u.id, memberJustificationReason)}
+                                className="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-[10px] uppercase cursor-pointer"
+                              >
+                                Pulihkan Akun
+                              </button>
+                            )}
+                            {u.status === 'PENDING_VERIFICATION' && (
+                              <button
+                                id={`btn-mob-approve-${u.id}`}
+                                onClick={() => restoreUser(u.id, 'Disetujui langsung oleh Pusat Sinode')}
+                                className="px-3 py-1.5 bg-indigo-600 text-white font-bold rounded-lg text-[10px] uppercase cursor-pointer"
+                              >
+                                Sahkan Akun
+                              </button>
+                            )}
+                            <button
+                              id={`btn-mob-delete-${u.id}`}
+                              onClick={() => {
+                                if (window.confirm(`Hapus permanen ${u.name}?`)) {
+                                  deleteUser(u.id);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold cursor-pointer"
+                            >
+                              Hapus
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 3: Antrean Verifikasi Proposal with detailed dossier view */}
           {activeView === 'proposals' && (
